@@ -1,0 +1,9 @@
+{
+  "name": "@portfolio/api",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "dependencies": {
+    "@portfolio/shared": "*"
+  }
+}

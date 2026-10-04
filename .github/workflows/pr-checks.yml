@@ -1,0 +1,52 @@
+name: PR checks
+
+on:
+  pull_request:
+    branches: [dev]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  typescript:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+
+  terraform-skeleton:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check Terraform or acknowledge empty skeleton
+        shell: bash
+        run: |
+          mapfile -t terraform_files < <(find infra -type f -name '*.tf' -print)
+          if (( ${#terraform_files[@]} == 0 )); then
+            echo 'Phase 0: no Terraform files yet; fmt/validate are not applicable.'
+            echo 'Terraform plan is not claimed until the Phase 1 backend and OIDC roles exist.'
+            exit 0
+          fi
+          echo 'Terraform files exist; Phase 1 must wire terraform fmt, validate, and plan.'
+          exit 1
+
+  checkov-skeleton:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check Checkov or acknowledge empty skeleton
+        shell: bash
+        run: |
+          mapfile -t terraform_files < <(find infra -type f -name '*.tf' -print)
+          if (( ${#terraform_files[@]} == 0 )); then
+            echo 'Phase 0: no Terraform files yet; Checkov is not applicable.'
+            exit 0
+          fi
+          echo 'Terraform files exist; Phase 1 must wire Checkov.'
+          exit 1
