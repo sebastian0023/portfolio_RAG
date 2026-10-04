@@ -44,9 +44,12 @@ const NAME_ATTRIBUTE: Readonly<Record<string, string>> = {
   aws_lambda_function: 'function_name',
   aws_lambda_function_url: 'function_name',
   aws_lambda_permission: 'function_name',
+  aws_lambda_alias: 'function_name',
   aws_cloudfront_distribution: 'comment',
   aws_cloudfront_origin_access_control: 'name',
   aws_cloudfront_origin_request_policy: 'name',
+  aws_cloudfront_response_headers_policy: 'name',
+  aws_dynamodb_table: 'name',
   aws_cloudwatch_log_group: 'name',
 };
 
@@ -65,6 +68,7 @@ const DEPENDENT_TYPES: ReadonlySet<string> = new Set([
   'aws_budgets_budget_action',
   'aws_lambda_function_url',
   'aws_lambda_permission',
+  'aws_lambda_alias',
 ]);
 
 // Destroying or replacing these loses state or data that cannot be recreated (ADR-033).
