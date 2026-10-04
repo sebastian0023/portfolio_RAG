@@ -73,3 +73,8 @@ export type ChatStreamEvent =
       readonly cited: readonly number[];
     }
   | { readonly type: 'error'; readonly error: ChatStreamError };
+
+// Wire constants shared by the API and the browser (ADR-049).
+export const CHAT_API_PATH = '/api/chat';
+// Hard cap on the request body in bytes. The server also enforces limits.requestMaxBytes from SSM.
+export const MAX_REQUEST_BYTES = 8192;
