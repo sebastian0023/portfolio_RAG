@@ -5,8 +5,9 @@ locals {
 
 # The GitHub OIDC provider is shared by other projects in this account (ADR-047).
 # It is read-only here: this module must never create, change, or destroy it.
+# Looked up by ARN rather than URL: a URL lookup lists every provider in the account, which the plan role must not be allowed to do.
 data "aws_iam_openid_connect_provider" "github" {
-  url = "https://${local.oidc_host}"
+  arn = "arn:aws:iam::${var.account_id}:oidc-provider/${local.oidc_host}"
 }
 
 # Plan role: assumable only by pull_request runs of this exact repository (ADR-008).

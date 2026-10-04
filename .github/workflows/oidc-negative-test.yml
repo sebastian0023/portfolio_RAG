@@ -1,0 +1,35 @@
+name: OIDC negative test
+
+# The plan role trusts only pull_request runs of this repository (ADR-008).
+# This workflow runs from a branch push and must FAIL to assume the role; it passes only when AWS denies it.
+on:
+  workflow_dispatch:
+  push:
+    branches: ['p1/**', 'phase/**']
+    paths: ['.github/workflows/oidc-negative-test.yml']
+
+permissions:
+  contents: read
+
+jobs:
+  plan-role-denied-outside-pull-request:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - id: assume
+        continue-on-error: true
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ vars.AWS_PLAN_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+      - name: Require that the assumption was denied
+        env:
+          OUTCOME: ${{ steps.assume.outcome }}
+        run: |
+          echo "assume-role outcome: ${OUTCOME}"
+          if [ "${OUTCOME}" = "success" ]; then
+            echo '::error::the plan role was assumable outside a pull_request run'
+            exit 1
+          fi
