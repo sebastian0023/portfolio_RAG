@@ -6,6 +6,7 @@ import {
   dayWindow,
   expiresAtSeconds,
   globalDayKey,
+  ipDayKey,
   globalMinuteKey,
   ipMinuteKey,
   minuteWindow,
@@ -64,26 +65,36 @@ export const chatEnabledStage: AdmissionStage = (ctx) =>
     ctx.config?.chatEnabled === true ? undefined : reject('unavailable'),
   );
 
-// Temporary site-wide daily cap (ADR-050): a hard stop on spend until Phase 4 adds per-principal quotas. The
-// reservation happens before the first paid call and is never refunded, so a disconnect still counts.
-export function dailyCapStage(
+// The daily quota (ADR-051): 10 questions per visitor IP bucket and 50 for the whole site, reserved together in
+// one atomic transaction before the first paid call and never refunded, so a disconnect still counts. A refused
+// visitor does not use up site capacity. Which limit was hit decides the refusal: the visitor's own
+// (`quota_exhausted`) or the site's (`site_limit`).
+export function guestQuotaStage(
   store: CounterStore,
   now: () => number = Date.now,
 ): AdmissionStage {
   return async (ctx) => {
     const limits = ctx.config?.limits;
-    if (!limits) return reject('unavailable');
+    if (!limits || !ctx.clientKey) return reject('unavailable');
     const window = dayWindow(now());
+    const expiresAt = expiresAtSeconds(window, 'day');
+    const ipKey = ipDayKey(ctx.clientKey, window);
     try {
-      const result = await store.reserve({
-        key: globalDayKey(window),
-        limit: limits.globalPerDay,
-        expiresAt: expiresAtSeconds(window, 'day'),
-      });
-      if (!result.ok) return reject('site_limit');
+      const result = await store.reserveAll([
+        { key: ipKey, limit: limits.guestPerIpPerDay, expiresAt },
+        { key: globalDayKey(window), limit: limits.globalPerDay, expiresAt },
+      ]);
+      if (!result.ok) {
+        return reject(
+          result.exceededIndex === 0 ? 'quota_exhausted' : 'site_limit',
+        );
+      }
+      // The visitor's own count, read back consistently. A concurrent request from the same IP can make it
+      // one or two lower than the strict remainder, which only ever under-reports what is left.
+      const used = await store.read(ipKey);
       ctx.quota = {
-        left: Math.max(0, limits.globalPerDay - result.count),
-        limit: limits.globalPerDay,
+        left: Math.max(0, limits.guestPerIpPerDay - used),
+        limit: limits.guestPerIpPerDay,
       };
       return undefined;
     } catch {

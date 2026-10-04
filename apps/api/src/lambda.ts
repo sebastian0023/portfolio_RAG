@@ -20,7 +20,7 @@ import {
 } from './core/chat/admission.js';
 import {
   chatEnabledStage,
-  dailyCapStage,
+  guestQuotaStage,
   preAuthRateStage,
   trustedIpStage,
 } from './core/admission/stages.js';
@@ -75,7 +75,7 @@ const handleChat = createChatHandler({
     preAuthRateStage(counters),
     chatEnabledStage,
     providerStage(registry),
-    dailyCapStage(counters),
+    guestQuotaStage(counters),
   ],
   service: createPlainChatService({ logger }),
   logger,

@@ -44,7 +44,7 @@ export const ipMinuteKey = (clientKey: string, window: Window): string =>
 export const globalMinuteKey = (window: Window): string =>
   `rate#global#${window.id}`;
 
-// Phase 4 reuses this key for the global daily limit.
+// The site-wide daily quota (ADR-051).
 export const globalDayKey = (window: Window): string =>
   `quota#global#${window.id}`;
 
@@ -62,3 +62,7 @@ export const expiresAtSeconds = (
 export function retryAfterSeconds(window: Window, nowMs: number): number {
   return Math.max(1, Math.ceil((window.endsAtMs - nowMs) / 1000));
 }
+
+// One bucket per visitor IP per UTC day (ADR-051). Like the minute key it holds only a hash of the bucket.
+export const ipDayKey = (clientKey: string, window: Window): string =>
+  `quota#ip#${fingerprint(clientKey)}#${window.id}`;
