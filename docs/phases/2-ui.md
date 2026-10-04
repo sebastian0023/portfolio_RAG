@@ -2,7 +2,7 @@
 
 Status: Implementation complete; PR and integration checks in progress
 
-Branch: `p2/card-layout` (consolidated Phase 2 PR into `dev`)
+Branch: `phase/2-ui` (consolidated Phase 2 PR into `dev`)
 
 ## Goal
 
