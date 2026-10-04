@@ -1,7 +1,6 @@
 import { MAX_QUESTION_LENGTH, type QuotaState } from '@portfolio/shared';
 import type { InlineAlert } from './chat-state';
-import { GUEST_LIMIT, SIGNED_IN_LIMIT, type CheckState } from './chat-state';
-import type { SessionInfo } from '../ports/session-port';
+import type { CheckState } from './chat-state';
 
 // Pure derivations of what the composer, meter, and limit card show. Copy follows the design's
 // state table; components bind to these and hold no rules of their own.
@@ -37,7 +36,6 @@ export function meterView(quota: QuotaState): MeterView {
 export interface LimitView {
   readonly title: string;
   readonly text: string;
-  readonly signInCta: boolean;
 }
 
 // Quota windows are UTC calendar days (abuse-budgets.md), so the reset moment is the next UTC midnight.
@@ -50,7 +48,6 @@ export function resetLabel(now: Date): string {
 
 export function limitView(
   quota: QuotaState,
-  session: SessionInfo,
   siteLimit: boolean,
   now: Date,
 ): LimitView | null {
@@ -59,21 +56,12 @@ export function limitView(
     return {
       title: 'Daily limit reached',
       text: `The assistant has answered all it can for today. It resets at ${reset}. The rest of this page still works.`,
-      signInCta: false,
     };
   }
   if (quota.left > 0) return null;
-  if (session.status === 'signed-in') {
-    return {
-      title: 'No questions left today',
-      text: `You've used today's ${SIGNED_IN_LIMIT} questions. They reset at ${reset}.`,
-      signInCta: false,
-    };
-  }
   return {
     title: 'No questions left today',
-    text: `You've used today's ${GUEST_LIMIT} questions. Sign in to get ${SIGNED_IN_LIMIT} a day, or come back after ${reset}.`,
-    signInCta: true,
+    text: `You've used today's ${quota.limit} questions. They reset at ${reset}.`,
   };
 }
 

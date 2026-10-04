@@ -38,7 +38,7 @@ async function collect(events: AsyncIterable<ChatStreamEvent>) {
 
 const accepted: ChatStreamEvent = {
   type: 'accepted',
-  quota: { left: 29, limit: 30, principal: 'guest' },
+  quota: { left: 29, limit: 30 },
 };
 const done: ChatStreamEvent = { type: 'done', coverage: 'none', cited: [] };
 

@@ -3,15 +3,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Q_AWS, Q_STUDYING } from '../../content/suggestions';
 import { CHAT_SEED } from '../../core/chat/chat-seed';
 import { ChatFacade } from '../../core/chat/chat-facade';
-import {
-  CHAT_TRANSPORT,
-  GUEST_CHECK_PORT,
-  SESSION_PORT,
-} from '../../core/ports/tokens';
+import { CHAT_TRANSPORT, GUEST_CHECK_PORT } from '../../core/ports/tokens';
 import { readHarness, parseOutcome } from './harness';
 import { createMockConfig } from './mock-config';
 import { MockChatTransport } from './mock-chat-transport';
-import { MockGuestCheck, MockSession } from './mock-session';
+import { MockGuestCheck } from './mock-guest-check';
 import { buildScenario, SCENARIO_IDS, type ScenarioId } from './scenarios';
 
 beforeEach(() => vi.useFakeTimers());
@@ -20,14 +16,12 @@ afterEach(() => vi.useRealTimers());
 function facadeFor(id: ScenarioId): ChatFacade {
   const scenario = buildScenario(id);
   const config = createMockConfig(scenario.config);
-  const session = new MockSession(config, scenario.session);
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
-      { provide: SESSION_PORT, useValue: session },
       {
         provide: CHAT_TRANSPORT,
-        useValue: new MockChatTransport(config, session),
+        useValue: new MockChatTransport(config),
       },
       { provide: GUEST_CHECK_PORT, useValue: new MockGuestCheck(config) },
       { provide: CHAT_SEED, useValue: scenario.seed },
@@ -42,8 +36,6 @@ describe('design scenarios', () => {
     const ids = (seed.messages ?? []).map((m) => m.id);
     expect(new Set(ids).size).toBe(ids.length);
     if (seed.quota) {
-      const signedIn = (seed.session?.status ?? 'guest') === 'signed-in';
-      expect(seed.quota.principal).toBe(signedIn ? 'user' : 'guest');
       expect(seed.quota.left).toBeLessThanOrEqual(seed.quota.limit);
     }
     const facade = facadeFor(id);
@@ -84,7 +76,7 @@ describe('design scenarios', () => {
     void facade.send(Q_AWS);
     await vi.runAllTimersAsync();
     expect(facade.phase()).toBe('complete');
-    expect(facade.quota()).toEqual({ left: 1, limit: 3, principal: 'guest' });
+    expect(facade.quota()).toEqual({ left: 1, limit: 10 });
     expect(facade.messages()).toHaveLength(4);
     void facade.send(Q_STUDYING);
     await vi.runAllTimersAsync();
@@ -94,9 +86,8 @@ describe('design scenarios', () => {
     expect(facade.messages()).toHaveLength(6); // refused: nothing sent at zero
   });
 
-  it('the out-of-questions frames offer sign-in only to guests', () => {
+  it('the out-of-questions frame has no questions left', () => {
     expect(facadeFor('outGuest').quota().left).toBe(0);
-    expect(facadeFor('outSigned').isSignedIn()).toBe(true);
   });
 });
 

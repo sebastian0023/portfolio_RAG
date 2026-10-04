@@ -19,7 +19,7 @@ const answering: ChatService = {
   async *stream() {
     yield {
       type: 'accepted',
-      quota: { left: 29, limit: 30, principal: 'guest' },
+      quota: { left: 29, limit: 30 },
     };
     yield { type: 'delta', text: 'hello' };
     yield { type: 'done', coverage: 'none', cited: [] };
@@ -62,7 +62,7 @@ describe('HTTP app status table (ADR-049)', () => {
     const text = await response.text();
     expect(text).toBe(
       [
-        'data: {"type":"accepted","quota":{"left":29,"limit":30,"principal":"guest"}}',
+        'data: {"type":"accepted","quota":{"left":29,"limit":30}}',
         'data: {"type":"delta","text":"hello"}',
         'data: {"type":"done","coverage":"none","cited":[]}',
       ]
@@ -161,7 +161,7 @@ describe('HTTP app status table (ADR-049)', () => {
       async *stream() {
         yield {
           type: 'accepted',
-          quota: { left: 1, limit: 30, principal: 'guest' },
+          quota: { left: 1, limit: 30 },
         };
         await Promise.resolve();
         throw new Error('secret provider detail');

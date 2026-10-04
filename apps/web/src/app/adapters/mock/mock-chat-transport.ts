@@ -7,7 +7,6 @@ import {
   NetworkError,
   type ChatTransport,
 } from '../../core/ports/chat-transport';
-import type { SessionPort } from '../../core/ports/session-port';
 import {
   answerFor,
   citedIn,
@@ -20,10 +19,7 @@ import { delay, type MockConfig, type MockOutcome } from './mock-config';
 // Deterministic stand-in for the chat API. It emits the same events the Lambda will (ADR-048),
 // including quota reservation, so the facade is exercised exactly as it will be in production.
 export class MockChatTransport implements ChatTransport {
-  constructor(
-    private readonly config: MockConfig,
-    private readonly session: SessionPort,
-  ) {}
+  constructor(private readonly config: MockConfig) {}
 
   async *send(
     request: ChatRequest,
@@ -62,23 +58,17 @@ export class MockChatTransport implements ChatTransport {
       yield { type: 'error', error: { code: 'site_limit' } };
       return;
     }
-    const signedIn = this.session.read().status === 'signed-in';
-    const left = signedIn ? this.config.userLeft : this.config.guestLeft;
+    const left = this.config.guestLeft;
     if (left <= 0) {
       yield { type: 'error', error: { code: 'quota_exhausted' } };
       return;
     }
 
     // Reserve before the first paid step and never refund (abuse-budgets.md).
-    if (signedIn) this.config.userLeft--;
-    else this.config.guestLeft--;
+    this.config.guestLeft--;
     yield {
       type: 'accepted',
-      quota: {
-        left: left - 1,
-        limit: signedIn ? this.config.userLimit : this.config.guestLimit,
-        principal: signedIn ? 'user' : 'guest',
-      },
+      quota: { left: left - 1, limit: this.config.guestLimit },
     };
 
     await delay(this.config.thinkingMs, signal);

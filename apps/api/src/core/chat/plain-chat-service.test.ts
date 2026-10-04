@@ -9,7 +9,7 @@ import { createPlainChatService } from './plain-chat-service.js';
 const parsed = parseRuntimeConfig(rawConfig());
 if (!parsed.ok) throw new Error('fixture config must be valid');
 const config = parsed.config;
-const quota: QuotaState = { principal: 'guest', left: 29, limit: 30 };
+const quota: QuotaState = { left: 29, limit: 30 };
 
 function input(
   provider: ChatServiceInput['provider'],

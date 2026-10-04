@@ -82,7 +82,6 @@ export function dailyCapStage(
       });
       if (!result.ok) return reject('site_limit');
       ctx.quota = {
-        principal: 'guest',
         left: Math.max(0, limits.globalPerDay - result.count),
         limit: limits.globalPerDay,
       };

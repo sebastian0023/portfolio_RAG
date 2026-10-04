@@ -13,30 +13,8 @@
         Explore projects, skills, and experience with cited answers.
       </p>
     </div>
-    @if (facade.isSignedIn()) {
-      <button type="button" class="text-btn" (click)="facade.signOut()">
-        Sign out
-      </button>
-    } @else if (facade.signInAvailable) {
-      <button type="button" class="neu-btn" (click)="facade.openSignIn()">
-        Sign in
-      </button>
-    }
   </header>
 
-  @if (facade.redirecting()) {
-    <p class="inline-alert" role="status">Signing you in…</p>
-  }
-  @if (facade.sessionExpired()) {
-    <div class="inline-alert" role="alert">
-      Your session ended.
-      @if (facade.signInAvailable) {
-        <button type="button" class="text-btn" (click)="facade.openSignIn()">
-          Sign in again
-        </button>
-      }
-    </div>
-  }
   @if (!facade.chatEnabled()) {
     <div class="inline-alert" role="status">
       The assistant is unavailable right now. You can still explore the
@@ -47,11 +25,6 @@
     <div class="limit" role="status">
       <h3>{{ cap.title }}</h3>
       <p>{{ cap.text }}</p>
-      @if (cap.signInCta && facade.signInAvailable) {
-        <button type="button" class="neu-btn" (click)="facade.openSignIn()">
-          Sign in for more questions
-        </button>
-      }
     </div>
   }
 
@@ -331,28 +304,6 @@
         Next
       </button>
     </div>
-  </app-modal>
-}
-@if (facade.dialog() === 'signin') {
-  <app-modal labelledBy="signin-title" (dismissed)="facade.closeDialog()">
-    <div class="dialog-head">
-      <h2 id="signin-title">Sign in for more questions</h2>
-      <button
-        type="button"
-        class="neu-round"
-        aria-label="Close sign in"
-        (click)="facade.closeDialog()"
-      >
-        ×
-      </button>
-    </div>
-    <p>Sign in to ask up to 10 questions a day.</p>
-    <button type="button" class="neu-btn" (click)="facade.chooseProvider('a')">
-      Continue with Provider A
-    </button>
-    <button type="button" class="neu-btn" (click)="facade.chooseProvider('b')">
-      Continue with Provider B
-    </button>
   </app-modal>
 }
 @for (toast of facade.toasts(); track toast.id) {

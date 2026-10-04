@@ -31,7 +31,6 @@ export type {
   ChatStreamEvent,
   ChatTurn,
   HighlightRange,
-  QuotaPrincipal,
   QuotaState,
   SourceCitation,
 } from './chat-stream.js';

@@ -8,14 +8,10 @@ import { environment } from '../../environments/environment';
 import { readHarness } from '../adapters/mock/harness';
 import { createMockConfig } from '../adapters/mock/mock-config';
 import { MockChatTransport } from '../adapters/mock/mock-chat-transport';
-import { MockGuestCheck, MockSession } from '../adapters/mock/mock-session';
+import { MockGuestCheck } from '../adapters/mock/mock-guest-check';
 import { buildScenario } from '../adapters/mock/scenarios';
 import { CHAT_SEED } from '../core/chat/chat-seed';
-import {
-  CHAT_TRANSPORT,
-  GUEST_CHECK_PORT,
-  SESSION_PORT,
-} from '../core/ports/tokens';
+import { CHAT_TRANSPORT, GUEST_CHECK_PORT } from '../core/ports/tokens';
 import { ThemeService } from '../core/theme/theme.service';
 
 // Development and e2e wiring: the deterministic mock backend and the ?scenario / ?mock harness. A build step
@@ -30,14 +26,12 @@ export function createProviders(
     ...(scenario?.config ?? {}),
     ...(harness?.outcomes.length ? { outcomes: [...harness.outcomes] } : {}),
   });
-  const session = new MockSession(config, scenario?.session);
   const theme = harness?.theme ?? null;
 
   return [
-    { provide: SESSION_PORT, useValue: session },
     {
       provide: CHAT_TRANSPORT,
-      useValue: new MockChatTransport(config, session),
+      useValue: new MockChatTransport(config),
     },
     { provide: GUEST_CHECK_PORT, useValue: new MockGuestCheck(config) },
     ...(scenario ? [{ provide: CHAT_SEED, useValue: scenario.seed }] : []),

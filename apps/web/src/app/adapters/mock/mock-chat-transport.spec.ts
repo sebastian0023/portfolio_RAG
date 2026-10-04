@@ -5,7 +5,6 @@ import { Q_AWS, Q_BEST_AT, Q_STUDYING } from '../../content/suggestions';
 import { NetworkError } from '../../core/ports/chat-transport';
 import { createMockConfig, type MockConfig } from './mock-config';
 import { MockChatTransport } from './mock-chat-transport';
-import { MockSession } from './mock-session';
 
 beforeEach(() => vi.useFakeTimers());
 afterEach(() => vi.useRealTimers());
@@ -16,11 +15,10 @@ async function collect(
   config: MockConfig,
   question: string,
   signal = new AbortController().signal,
-  session = new MockSession(config),
 ): Promise<ChatStreamEvent[]> {
   const events: ChatStreamEvent[] = [];
   const run = (async () => {
-    for await (const event of new MockChatTransport(config, session).send(
+    for await (const event of new MockChatTransport(config).send(
       request(question),
       signal,
     )) {
@@ -107,28 +105,12 @@ describe('MockChatTransport', () => {
     const first = await collect(config, Q_STUDYING);
     expect(first[0]).toEqual({
       type: 'accepted',
-      quota: { left: 0, limit: 3, principal: 'guest' },
+      quota: { left: 0, limit: 10 },
     });
     expect(await collect(config, Q_STUDYING)).toEqual([
       { type: 'error', error: { code: 'quota_exhausted' } },
     ]);
     expect(config.guestLeft).toBe(0);
-  });
-
-  it('uses the signed-in quota for a signed-in session', async () => {
-    const config = createMockConfig({ userLeft: 2 });
-    const session = new MockSession(config, { status: 'signed-in' });
-    const events = await collect(
-      config,
-      Q_STUDYING,
-      new AbortController().signal,
-      session,
-    );
-    expect(events[0]).toEqual({
-      type: 'accepted',
-      quota: { left: 1, limit: 10, principal: 'user' },
-    });
-    expect(config.guestLeft).toBe(3);
   });
 
   it.each([
@@ -141,7 +123,7 @@ describe('MockChatTransport', () => {
       expect(await collect(config, Q_STUDYING)).toEqual([
         { type: 'error', error: { code } },
       ]);
-      expect(config.guestLeft).toBe(3);
+      expect(config.guestLeft).toBe(10);
     },
   );
 
@@ -149,7 +131,7 @@ describe('MockChatTransport', () => {
     const config = createMockConfig();
     const events = await collect(config, 'a'.repeat(501));
     expect(events).toEqual([{ type: 'error', error: { code: 'too_long' } }]);
-    expect(config.guestLeft).toBe(3);
+    expect(config.guestLeft).toBe(10);
   });
 
   it('plays scripted outcomes in order, then returns to normal', async () => {
@@ -193,10 +175,10 @@ describe('MockChatTransport', () => {
     const controller = new AbortController();
     const seen: ChatStreamEvent[] = [];
     const run = (async () => {
-      for await (const event of new MockChatTransport(
-        config,
-        new MockSession(config),
-      ).send(request(Q_STUDYING), controller.signal)) {
+      for await (const event of new MockChatTransport(config).send(
+        request(Q_STUDYING),
+        controller.signal,
+      )) {
         seen.push(event);
         if (event.type === 'delta') controller.abort();
       }
@@ -209,6 +191,6 @@ describe('MockChatTransport', () => {
     await vi.runAllTimersAsync();
     expect(await outcome).toBe('AbortError');
     expect(seen.filter((e) => e.type === 'delta')).toHaveLength(1);
-    expect(config.guestLeft).toBe(2);
+    expect(config.guestLeft).toBe(9);
   });
 });

@@ -70,7 +70,7 @@ describe('admission stages (ADR-016, ADR-017)', () => {
     const { stages } = chain(store);
     const ctx = viewer();
     expect(await runAdmission(stages, ctx)).toBeUndefined();
-    expect(ctx.quota).toEqual({ principal: 'guest', left: 29, limit: 30 });
+    expect(ctx.quota).toEqual({ left: 29, limit: 30 });
     expect(ctx.provider).toBeDefined();
   });
 
@@ -233,7 +233,7 @@ describe('admission stages (ADR-016, ADR-017)', () => {
       expect(await runAdmission(chain(store, raw).stages, ctx)).toBeUndefined();
       last = ctx.quota;
     }
-    expect(last).toEqual({ principal: 'guest', left: 0, limit: 30 });
+    expect(last).toEqual({ left: 0, limit: 30 });
     expect(
       await runAdmission(chain(store, raw).stages, viewer()),
     ).toMatchObject({

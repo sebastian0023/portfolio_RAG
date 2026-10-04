@@ -86,6 +86,6 @@ export function context(
 // service.
 export const wiringStage: AdmissionStage = (ctx) => {
   ctx.provider = scriptedProvider([]);
-  ctx.quota = { principal: 'guest', left: 29, limit: 30 };
+  ctx.quota = { left: 29, limit: 30 };
   return Promise.resolve(undefined);
 };

@@ -13,19 +13,15 @@ export const CHAT_ERROR_CODES = [
   'quota_exhausted',
   'site_limit',
   'unavailable',
-  'auth_expired',
   'guest_check_failed',
   'interrupted',
 ] as const;
 
 export type ChatErrorCode = (typeof CHAT_ERROR_CODES)[number];
 
-export type QuotaPrincipal = 'guest' | 'user';
-
 export interface QuotaState {
   readonly left: number;
   readonly limit: number;
-  readonly principal: QuotaPrincipal;
 }
 
 // Character offsets into `excerpt`; end is exclusive.
