@@ -17,3 +17,18 @@ variable "web_bucket_regional_domain_name" {
   description = "Regional domain name used as the S3 origin."
   type        = string
 }
+
+variable "lambda_function_name" {
+  description = "API function that serves /api/*."
+  type        = string
+}
+
+variable "lambda_alias_name" {
+  description = "Alias that CloudFront is allowed to invoke."
+  type        = string
+}
+
+variable "lambda_function_url" {
+  description = "Function URL of the alias (qualifier on the live alias)."
+  type        = string
+}

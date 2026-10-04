@@ -3,6 +3,10 @@ locals {
 
   # AWS managed cache policy ids. Constants avoid a ListCachePolicies read for the plan role.
   caching_optimized_policy_id = "658327ea-f89d-4fab-a63d-7e88639e58f6"
+  caching_disabled_policy_id  = "4135ea2d-6df8-44a3-9df3-4b5a84be39ad"
+
+  api_origin_id     = "api"
+  api_origin_domain = trimsuffix(trimprefix(var.lambda_function_url, "https://"), "/")
 }
 
 resource "aws_cloudfront_origin_access_control" "web" {
@@ -44,6 +48,37 @@ resource "aws_cloudfront_response_headers_policy" "spa" {
   }
 }
 
+resource "aws_cloudfront_origin_access_control" "api" {
+  name                              = "${var.name_prefix}-api"
+  description                       = "OAC that signs requests to the API Function URL."
+  origin_access_control_origin_type = "lambda"
+  signing_behavior                  = "always"
+  signing_protocol                  = "sigv4"
+}
+
+# x-amz-content-sha256 is deliberately absent: CloudFront rejects it in an origin request policy, and the
+# viewer must send it anyway so CloudFront can sign the POST body (oac-spike.md).
+resource "aws_cloudfront_origin_request_policy" "api" {
+  name    = "${var.name_prefix}-api-origin"
+  comment = "Forwards the content type, the app auth token, and the trusted viewer address."
+
+  cookies_config {
+    cookie_behavior = "none"
+  }
+
+  query_strings_config {
+    query_string_behavior = "none"
+  }
+
+  headers_config {
+    header_behavior = "whitelist"
+
+    headers {
+      items = ["Content-Type", "X-Auth-Token", "CloudFront-Viewer-Address"]
+    }
+  }
+}
+
 resource "aws_cloudfront_distribution" "edge" {
   comment             = "${var.name_prefix}-edge"
   enabled             = true
@@ -77,6 +112,33 @@ resource "aws_cloudfront_distribution" "edge" {
     compress                   = true
     cache_policy_id            = local.caching_optimized_policy_id
     response_headers_policy_id = aws_cloudfront_response_headers_policy.spa.id
+  }
+
+  origin {
+    domain_name              = local.api_origin_domain
+    origin_id                = local.api_origin_id
+    origin_access_control_id = aws_cloudfront_origin_access_control.api.id
+
+    custom_origin_config {
+      http_port                = 80
+      https_port               = 443
+      origin_protocol_policy   = "https-only"
+      origin_ssl_protocols     = ["TLSv1.2"]
+      origin_read_timeout      = 60
+      origin_keepalive_timeout = 5
+    }
+  }
+
+  # compress is off so the SSE stream is never buffered for compression.
+  ordered_cache_behavior {
+    path_pattern             = "/api/*"
+    target_origin_id         = local.api_origin_id
+    viewer_protocol_policy   = "https-only"
+    allowed_methods          = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
+    cached_methods           = ["GET", "HEAD"]
+    compress                 = false
+    cache_policy_id          = local.caching_disabled_policy_id
+    origin_request_policy_id = aws_cloudfront_origin_request_policy.api.id
   }
 
   restrictions {
@@ -130,4 +192,26 @@ data "aws_iam_policy_document" "web_bucket" {
 resource "aws_s3_bucket_policy" "web" {
   bucket = var.web_bucket_id
   policy = data.aws_iam_policy_document.web_bucket.json
+}
+
+# Both permissions are required for a Function URL behind OAC: AWS ends its InvokeFunctionUrl-only exception on
+# 2026-11-01. Each is limited to this distribution and to the live alias.
+resource "aws_lambda_permission" "invoke_url" {
+  statement_id           = "AllowCloudFrontInvokeUrl"
+  action                 = "lambda:InvokeFunctionUrl"
+  function_name          = var.lambda_function_name
+  qualifier              = var.lambda_alias_name
+  principal              = "cloudfront.amazonaws.com"
+  source_arn             = aws_cloudfront_distribution.edge.arn
+  function_url_auth_type = "AWS_IAM"
+}
+
+resource "aws_lambda_permission" "invoke_function" {
+  statement_id             = "AllowCloudFrontInvokeFunction"
+  action                   = "lambda:InvokeFunction"
+  function_name            = var.lambda_function_name
+  qualifier                = var.lambda_alias_name
+  principal                = "cloudfront.amazonaws.com"
+  source_arn               = aws_cloudfront_distribution.edge.arn
+  invoked_via_function_url = true
 }

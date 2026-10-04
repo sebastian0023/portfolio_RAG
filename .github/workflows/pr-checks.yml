@@ -111,6 +111,13 @@ jobs:
         with:
           terraform_version: 1.14.8
           terraform_wrapper: false
+      # The Lambda bundle is an input to the stack plan. Install and build run before any AWS credentials
+      # exist, so package install scripts never see them (R-14).
+      - name: Build the API bundle
+        run: |
+          npm ci
+          npm run build -w @portfolio/api
+          sha256sum apps/api/dist/lambda/index.mjs
       - uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
         with:
           role-to-assume: ${{ vars.AWS_PLAN_ROLE_ARN }}
