@@ -1,0 +1,35 @@
+<a class="skip" href="#chat" (click)="skipToChat($event)">Skip to the chat</a>
+<main
+  class="page"
+  [class.page--desktop]="layout.breakpoint() === 'desktop'"
+  [class.page--mobile]="layout.breakpoint() === 'mobile'"
+>
+  <div class="visually-hidden" aria-live="polite">{{ facade.liveText() }}</div>
+  <div class="visually-hidden" aria-live="assertive">
+    {{ facade.alertText() }}
+  </div>
+  <div class="theme-row">
+    <app-theme-switch [choice]="theme.choice()" (choose)="theme.set($event)" />
+  </div>
+
+  <div class="cols">
+    <app-presentation-card
+      [profile]="profile"
+      [variant]="layout.breakpoint() === 'desktop' ? 'aside' : 'compact'"
+      [compactColumns]="layout.breakpoint() === 'tablet' ? 4 : 2"
+      [markers]="markers"
+      (openHow)="facade.openHow()"
+    />
+    <div class="right">
+      <app-chat-panel />
+    </div>
+  </div>
+</main>
+
+@if (facade.dialog() === 'how') {
+  <app-how-dialog
+    [name]="'[Name]'"
+    [markers]="markers"
+    (closed)="facade.closeDialog()"
+  />
+}

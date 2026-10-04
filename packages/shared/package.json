@@ -4,6 +4,10 @@
   "version": "0.0.0",
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./chat-stream-schema": "./src/chat-stream-schema.ts"
+  },
+  "dependencies": {
+    "zod": "4.6.5"
   }
 }

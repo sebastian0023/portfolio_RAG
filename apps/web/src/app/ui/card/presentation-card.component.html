@@ -1,0 +1,100 @@
+<ng-template #footer>
+  <p class="foot">
+    <button type="button" class="text-btn" (click)="openHow.emit()">
+      How this assistant works
+    </button>
+    <span aria-hidden="true">·</span>
+    <span>
+      Last updated
+      <app-slot
+        [value]="profile().lastUpdated.value"
+        [pending]="profile().lastUpdated.pending ?? false"
+        [markers]="markers()"
+      />
+    </span>
+  </p>
+</ng-template>
+
+@if (variant() === 'aside') {
+  <aside
+    class="card aside"
+    data-component="PresentationCard"
+    [attr.aria-label]="'About ' + profile().name.value"
+  >
+    <div class="intro">
+      <div class="avatar" aria-hidden="true">{{ profile().initials }}</div>
+      <h1 class="name">
+        <app-slot
+          size="lg"
+          [value]="profile().name.value"
+          [pending]="profile().name.pending ?? false"
+          [markers]="markers()"
+        />
+      </h1>
+      <app-availability-pill [status]="profile().availability" />
+      <p class="headline">
+        <app-slot
+          size="lg"
+          [value]="profile().headline.value"
+          [pending]="profile().headline.pending ?? false"
+          [markers]="markers()"
+        />
+      </p>
+    </div>
+    <app-fact-list [facts]="profile().facts" [markers]="markers()" />
+    <app-link-grid [links]="profile().links" [columns]="2" [tooltips]="true" />
+    <app-recent-timeline [items]="profile().recent" [markers]="markers()" />
+    <ng-container *ngTemplateOutlet="footer" />
+  </aside>
+} @else {
+  <section
+    class="card compact"
+    data-component="PresentationCard"
+    [attr.aria-label]="'About ' + profile().name.value"
+  >
+    <div class="compact-head">
+      <div class="avatar avatar--sm" aria-hidden="true">
+        {{ profile().initials }}
+      </div>
+      <div class="who">
+        <h1 class="name name--sm">
+          <app-slot
+            size="lg"
+            [value]="profile().name.value"
+            [pending]="profile().name.pending ?? false"
+            [markers]="markers()"
+          />
+        </h1>
+        <p class="headline-sm">
+          <app-slot
+            [value]="profile().headline.value"
+            [pending]="profile().headline.pending ?? false"
+            [markers]="markers()"
+          />
+        </p>
+      </div>
+      <app-availability-pill [status]="profile().availability" />
+    </div>
+    <app-link-grid [links]="profile().links" [columns]="compactColumns()" />
+    <button
+      type="button"
+      class="expand"
+      [class.expand--open]="expanded()"
+      [attr.aria-expanded]="expanded()"
+      aria-controls="more-details"
+      (click)="toggle()"
+    >
+      <span>More about {{ profile().name.value }}</span>
+      <span class="chev" [class.chev--open]="expanded()"
+        ><app-icon name="chevDown"
+      /></span>
+    </button>
+    @if (expanded()) {
+      <div id="more-details" class="more">
+        <app-fact-list [facts]="profile().facts" [markers]="markers()" />
+        <app-recent-timeline [items]="profile().recent" [markers]="markers()" />
+        <ng-container *ngTemplateOutlet="footer" />
+      </div>
+    }
+  </section>
+}

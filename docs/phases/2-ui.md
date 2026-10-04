@@ -1,8 +1,8 @@
 # Phase 2: UI
 
-Status: Not started
+Status: Implementation complete; PR and integration checks in progress
 
-Branch: `phase/2-ui`
+Branch: `phase/2-ui` (consolidated Phase 2 PR into `dev`)
 
 ## Goal
 
@@ -43,20 +43,26 @@ Mitigations and evidence live in [Spikes and Risks](https://app.notion.com/p/9f1
 
 ## Exit checklist
 
-- [ ] Exit criteria above met
-- [ ] Lint, typecheck, formatting, and Vitest green in CI
-- [ ] Terraform fmt/validate/plan and Checkov green, or explicitly not applicable
-- [ ] Phase-specific acceptance, cost, and security checks recorded
-- [ ] Post-deploy smoke passed, or "endpoint smoke not applicable" recorded
-- [ ] No secrets, private contact details, or confidential knowledge committed
-- [ ] ADR and risk changes mirrored in Notion and `docs/`
+- [x] Exit criteria above met locally on desktop and mobile mock builds
+- [x] Lint, typecheck, formatting, and Vitest green in CI
+- [x] Terraform fmt/validate/plan and Checkov green in CI
+- [x] Phase-specific acceptance, cost, and security checks recorded below (mock traffic incurs no AWS runtime cost)
+- [x] Endpoint smoke not applicable; no Phase 2 deployment
+- [x] No secrets, private contact details, or confidential knowledge committed
+- [x] ADR-048 mirrored in [Notion](https://app.notion.com/p/3efc9c3293d9812ebd04d22a040415ea) and `docs/`; no Phase 2 risk change
 - [ ] PR merged into `dev`, tagged `phase-2-complete`, Notion phase set to Done
 
 ## Evidence
 
-- PR:
+- Local `npm run check`: passed (111 root Vitest tests, 138 Angular Vitest tests; production build 243.24 kB initial raw size).
+- Local `npm run test:e2e -w @portfolio/web`: 6 passed across desktop Chromium and Pixel 7. Covers send, stream, source viewer, keyboard, stop, unavailable state, quota, responsive layout, and axe accessibility.
+- Desktop capture: [desktop.png](../evidence/phase-2/desktop.png)
+- Mobile capture: [mobile.png](../evidence/phase-2/mobile.png)
+- Security/content: typed answer segments are rendered as text; component test confirms model markup never creates an HTML element. Owner profile and mock corpus values remain visibly pending.
+- Deployment/smoke: endpoint smoke not applicable in Phase 2; the UI uses local mock ports only.
+- PR: [#17](https://github.com/sebastian0023/portfolio_RAG/pull/17)
 - Tag: `phase-2-complete`
-- CI run:
+- CI run: [PR checks](https://github.com/sebastian0023/portfolio_RAG/actions/runs/37191675664) — TypeScript, Terraform, Checkov, plan, and browser smoke passed
 - Deployment/smoke:
 - Sign-off:
 

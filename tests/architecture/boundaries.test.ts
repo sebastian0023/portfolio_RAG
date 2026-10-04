@@ -29,6 +29,10 @@ const targets: Record<string, string> = {
   'apps/api/src/core/ok-core.ts': 'export const core = 1;\n',
   'apps/api/src/adapters/adapter.ts': 'export const adapter = 1;\n',
   'apps/web/src/web.ts': 'export const web = 1;\n',
+  'apps/web/src/app/adapters/mock.ts': 'export const mock = 1;\n',
+  'apps/web/src/app/core/ok-core.ts': 'export const webCore = 1;\n',
+  'apps/web/src/app/core/chat-facade.ts': 'export const facade = 1;\n',
+  'apps/web/src/app/ui/ok-ui.ts': 'export const webUi = 1;\n',
   'packages/shared/src/shared.ts': 'export const shared = 1;\n',
 };
 
@@ -64,6 +68,42 @@ const cases: Record<string, [string, string | null]> = {
   ],
   'apps/api/src/core/ok-core-to-shared.ts': [
     "import { shared } from '../../../../packages/shared/src/shared.js';\nexport const x = shared;\n",
+    null,
+  ],
+  'apps/web/src/app/ui/bad-ui-to-adapter.ts': [
+    "import { mock } from '../adapters/mock.js';\nexport const x = mock;\n",
+    BOUNDARY,
+  ],
+  'apps/web/src/app/core/bad-core-to-adapter.ts': [
+    "import { mock } from '../adapters/mock.js';\nexport const x = mock;\n",
+    BOUNDARY,
+  ],
+  'apps/web/src/app/core/bad-core-to-ui.ts': [
+    "import { webUi } from '../ui/ok-ui.js';\nexport const x = webUi;\n",
+    BOUNDARY,
+  ],
+  'apps/web/src/app/adapters/bad-adapter-to-ui.ts': [
+    "import { webUi } from '../ui/ok-ui.js';\nexport const x = webUi;\n",
+    BOUNDARY,
+  ],
+  'apps/web/src/app/ui/bad-ui-facade.ts': [
+    "import { facade } from '../core/chat-facade.js';\nexport const x = facade;\n",
+    'no-restricted-imports',
+  ],
+  'apps/web/src/app/core/bad-inner-html.ts': [
+    'export function render(el: HTMLElement, html: string): void {\n  el.innerHTML = html;\n}\n',
+    'no-restricted-syntax',
+  ],
+  'apps/web/src/app/app.config.ts': [
+    "import { mock } from './adapters/mock.js';\nexport const x = mock;\n",
+    null,
+  ],
+  'apps/web/src/app/adapters/ok-adapter-to-core.ts': [
+    "import { webCore } from '../core/ok-core.js';\nexport const x = webCore;\n",
+    null,
+  ],
+  'apps/web/src/app/ui/ok-ui-to-core-model.ts': [
+    "import { webCore } from '../core/ok-core.js';\nexport const x = webCore;\n",
     null,
   ],
   'apps/web/src/ok-web-to-shared.ts': [

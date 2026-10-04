@@ -12,7 +12,8 @@ export interface IndexMatch {
   readonly sourceUrl?: string;
 }
 
-// Returned to the browser; references a retrieved chunk without exposing its text.
+// References a retrieved chunk without exposing its text. The browser also receives a bounded public
+// excerpt through SourceCitation in chat-stream.ts (ADR-048); this type stays text-free.
 export interface Citation {
   readonly chunkId: string;
   readonly sourceId: string;
