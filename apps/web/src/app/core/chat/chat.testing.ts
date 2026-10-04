@@ -71,15 +71,26 @@ export class ScriptedTransport implements ChatTransport {
 }
 
 export class FakeGuestCheck implements GuestCheckPort {
-  required = true;
+  // Whether a usable pass is held. Tests set it false to model an expired pass.
+  ready = true;
+  invalidations = 0;
   results: GuestCheckResult[] = [];
   calls = 0;
   // Set to hold the check open until the test releases it.
   gate: Promise<void> | null = null;
+  isReady(): boolean {
+    return this.ready;
+  }
+  invalidate(): void {
+    this.invalidations++;
+    this.ready = false;
+  }
   async verify(): Promise<GuestCheckResult> {
     this.calls++;
     await this.gate;
-    return this.results.shift() ?? 'passed';
+    const result = this.results.shift() ?? 'passed';
+    this.ready = result === 'passed';
+    return result;
   }
 }
 

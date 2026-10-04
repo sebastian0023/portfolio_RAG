@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { HttpChatTransport } from '../adapters/http/http-chat-transport';
-import { NotRequiredGuestCheck } from '../adapters/phase3/not-required-guest-check';
+import { TurnstileGuestCheck } from '../adapters/turnstile/turnstile-guest-check';
 import { CHAT_TRANSPORT, GUEST_CHECK_PORT } from '../core/ports/tokens';
 import { createProviders } from './production-providers';
 
@@ -16,9 +16,9 @@ describe('production wiring (ADR-043)', () => {
   const valueFor = (token: unknown) =>
     providers.find((p) => p.provide === token)?.useValue;
 
-  it('uses the HTTP transport and the honest Phase 3 guest check', () => {
+  it('uses the HTTP transport and the Turnstile guest check', () => {
     expect(valueFor(CHAT_TRANSPORT)).toBeInstanceOf(HttpChatTransport);
-    expect(valueFor(GUEST_CHECK_PORT)).toBeInstanceOf(NotRequiredGuestCheck);
+    expect(valueFor(GUEST_CHECK_PORT)).toBeInstanceOf(TurnstileGuestCheck);
   });
 
   it('wires nothing else, so no mock or harness provider can slip in', () => {
@@ -34,8 +34,9 @@ describe('production wiring (ADR-043)', () => {
     );
   });
 
-  it('has a guest check that is not required', () => {
-    const check = valueFor(GUEST_CHECK_PORT) as NotRequiredGuestCheck;
-    expect(check.required).toBe(false);
+  it('hands the transport the pass the guest check holds, and nothing else', () => {
+    const check = valueFor(GUEST_CHECK_PORT) as TurnstileGuestCheck;
+    expect(check.isReady()).toBe(false);
+    expect(check.getPass()).toBeNull();
   });
 });

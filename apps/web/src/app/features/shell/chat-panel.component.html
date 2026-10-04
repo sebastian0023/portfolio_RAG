@@ -154,6 +154,8 @@
     }
   </div>
 
+  <!-- Cloudflare renders its challenge here, and only when it needs the visitor (ADR-052). -->
+  <div id="guest-check-slot" class="guest-check-slot"></div>
   @if (facade.check() !== 'idle') {
     <div
       class="inline-alert"
