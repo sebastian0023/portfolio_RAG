@@ -51,7 +51,7 @@ The API and the web app are deployed from the **same commit** so the two never d
 1. `npm ci`, then `npm run build -w @portfolio/api`. Print the bundle hash: `shasum -a 256 apps/api/dist/lambda/index.mjs`. It must equal the hash the CI `plan` job printed for the same commit; if it does not, stop (a dependency or toolchain differs).
 2. Plan, guard, and apply the `infra/stack` root as above, in the same working tree with no rebuild in between. The plan shows one new function version and an alias update; any other change is a surprise.
 3. Run `node infra/scripts/deploy-web.ts` (add `--dry-run` first to read the upload list). It refuses a dirty tree, a commit that is not pushed to `origin/dev` or `origin/phase/*`, a bucket outside the `portfolio-v2-` prefix, conflict copies such as `index 2.html`, and an `index.html` with an inline script. It uploads hashed assets first and `index.html` last, writes `version.json` with the commit, and invalidates only `/index.html` and `/version.json`.
-4. Run `node infra/scripts/smoke-edge.ts` (chat off). Add `--chat-only` only inside a window you opened by setting `chat_enabled` to `true`; close the window straight afterwards.
+4. Run `node infra/scripts/smoke-edge.ts` (chat off). Inside a window you opened by setting `chat_enabled` to `true`, run it with `--window` (see below); close the window straight afterwards.
 5. Record the commit, the bundle hash, the plan counts, and the smoke output.
 
 Keep the checkout out of iCloud or another synced folder for applies and deploys: sync conflict copies end up inside `dist/` and inside the Lambda bundle's inputs.
@@ -61,6 +61,21 @@ Keep the checkout out of iCloud or another synced folder for applies and deploys
 - **API:** re-apply the previous commit (the alias returns to the earlier version). In an emergency, move the alias directly, then follow with a revert pull request so Terraform agrees: `aws lambda update-alias --function-name portfolio-v2-prod-api --name live --function-version <N> --profile portfolio-v2`.
 - **Web:** run `deploy-web.ts` from the previous commit. Old hashed files stay in the bucket, so open tabs keep working.
 - **Stop answering without a rollback:** set `chat_enabled` to `false` ([kill-switch.md](kill-switch.md)).
+
+## Phase 4: the guest-check secrets and the bounded window
+
+The guest check (ADR-052) needs two secrets in SSM. Terraform creates both as SecureStrings holding the placeholder `unset` and never changes the value afterwards, so real values never enter state or a plan (R-18). The API refuses every request while either is still the placeholder, so applying before setting them is safe.
+
+1. **Turnstile.** In the Cloudflare dashboard create a Turnstile widget: mode Managed, hostname the CloudFront domain. Put the **sitekey** (public) in `apps/web/src/environments/environment.ts` as `turnstileSiteKey`. `deploy-web.ts` refuses to publish an empty one.
+2. **Set the two secrets** after the stack apply. `read -s` keeps the Turnstile secret out of shell history and the screen:
+   ```sh
+   read -rs TS && aws ssm put-parameter --name /portfolio-v2/prod/turnstile_secret --type SecureString --value "$TS" --overwrite; unset TS
+   aws ssm put-parameter --name /portfolio-v2/prod/guest_pass_key --type SecureString --value "$(openssl rand -base64 48)" --overwrite
+   ```
+   The values are read with a 5 minute cache, so allow that long before testing. Rotating `guest_pass_key` later invalidates every pass; visitors simply pass the check again.
+3. **Check the secrets are set** without printing them: `aws ssm get-parameter --name /portfolio-v2/prod/turnstile_secret --with-decryption --query 'Parameter.Value != `unset`'` must print `true` (and the same for `guest_pass_key`).
+4. **Bounded window.** Set `chat_enabled` to `true`, wait 35 s, then run `node infra/scripts/smoke-edge.ts --window`. It makes no model call: it proves chat without a pass is refused, a forged pass is refused, a bogus Turnstile token is refused by Cloudflare, and the guest-pass answer is uncached JSON. Then in a real browser open the site, ask a question (the bot check runs, usually invisibly), and watch the quota line count down from 10; a second question must not run the check again. Set `chat_enabled` back to `false` and confirm it.
+5. If the bogus-token case answers 503 instead of 403, a secret is still the placeholder or unreadable (check the KMS and IAM access of `portfolio-v2-prod-api` to the SecureStrings).
 
 ## Never
 
