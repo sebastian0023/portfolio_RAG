@@ -5,6 +5,10 @@
     "outDir": "dist",
     "rewriteRelativeImportExtensions": true
   },
-  "include": ["**/*.ts", "../infra/scripts/**/*.ts"],
-  "exclude": ["dist"]
+  "include": [
+    "**/*.ts",
+    "../infra/scripts/**/*.ts",
+    "../apps/api/src/core/**/*.ts"
+  ],
+  "exclude": ["dist", "../apps/api/src/**/*.test.ts"]
 }

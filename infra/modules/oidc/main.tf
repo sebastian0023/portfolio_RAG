@@ -94,6 +94,7 @@ data "aws_iam_policy_document" "plan" {
       "iam:GetRolePolicy",
       "iam:ListAttachedRolePolicies",
       "iam:ListInstanceProfilesForRole",
+      "iam:ListPolicyTags",
       "iam:ListPolicyVersions",
       "iam:ListRolePolicies",
       "iam:ListRoleTags",

@@ -112,3 +112,14 @@ jobs:
           terraform plan -input=false -lock=false -out=plan.out
           terraform show -json plan.out > plan.json
           node ../scripts/check-plan.ts plan.json
+      - name: Plan stack (read-only) and run the plan guard
+        working-directory: infra/stack
+        env:
+          TF_STATE_BUCKET: ${{ vars.TF_STATE_BUCKET }}
+          TF_REGION: ${{ vars.AWS_REGION }}
+          TF_VAR_alert_email: ${{ vars.ALERT_EMAIL }}
+        run: |
+          terraform init -input=false -backend-config="bucket=${TF_STATE_BUCKET}" -backend-config="region=${TF_REGION}"
+          terraform plan -input=false -lock=false -out=plan.out
+          terraform show -json plan.out > plan.json
+          node ../scripts/check-plan.ts plan.json
