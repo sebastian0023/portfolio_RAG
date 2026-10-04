@@ -1,6 +1,6 @@
 # Phase 2: UI
 
-Status: Implementation complete; PR and integration checks in progress
+Status: Complete
 
 Branch: `phase/2-ui` (consolidated Phase 2 PR into `dev`)
 
@@ -50,7 +50,7 @@ Mitigations and evidence live in [Spikes and Risks](https://app.notion.com/p/9f1
 - [x] Endpoint smoke not applicable; no Phase 2 deployment
 - [x] No secrets, private contact details, or confidential knowledge committed
 - [x] ADR-048 mirrored in [Notion](https://app.notion.com/p/3efc9c3293d9812ebd04d22a040415ea) and `docs/`; no Phase 2 risk change
-- [ ] PR merged into `dev`, tagged `phase-2-complete`, Notion phase set to Done
+- [x] PR merged into `dev`, tagged `phase-2-complete`, Notion phase set to Done
 
 ## Evidence
 
@@ -61,9 +61,9 @@ Mitigations and evidence live in [Spikes and Risks](https://app.notion.com/p/9f1
 - Security/content: typed answer segments are rendered as text; component test confirms model markup never creates an HTML element. Owner profile and mock corpus values remain visibly pending.
 - Deployment/smoke: endpoint smoke not applicable in Phase 2; the UI uses local mock ports only.
 - PR: [#17](https://github.com/sebastian0023/portfolio_RAG/pull/17)
-- Tag: `phase-2-complete`
-- CI run: [PR checks](https://github.com/sebastian0023/portfolio_RAG/actions/runs/37191675664) — TypeScript, Terraform, Checkov, plan, and browser smoke passed
+- Tag: [`phase-2-complete`](https://github.com/sebastian0023/portfolio_RAG/tree/phase-2-complete) on merge commit `27280e9`
+- CI run: [PR checks](https://github.com/sebastian0023/portfolio_RAG/actions/runs/37191962730) — TypeScript, Terraform, Checkov, plan, and browser smoke passed on the merged PR head
 - Deployment/smoke:
-- Sign-off:
+- Sign-off: owner authorized PR merge and tag on 2026-10-04
 
 Sign-off and detailed results are tracked in the [Notion plan](https://app.notion.com/p/3efc9c3293d981c4ab1bcf5e2dad3d55).
