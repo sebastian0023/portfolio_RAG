@@ -1,9 +1,9 @@
 // Post-deploy smoke test through CloudFront (operator-run). Usage:
-//   node infra/scripts/smoke-edge.ts            edge, refusals, and the race, with chat OFF (costs nothing)
-//   node infra/scripts/smoke-edge.ts --chat-only   just the one streamed answer (set chat_enabled=true first)
-// It reads targets from `terraform output`, prints PASS or FAIL per case with timings, and never prints a
-// request body, a response body, a token, or an address (ADR-028). The race case spends the whole per-IP
-// minute budget, so it waits for a fresh minute first; the one chat message costs under a cent.
+//   node infra/scripts/smoke-edge.ts            edge, refusals, and the rate limit, with chat OFF (costs nothing)
+//   node infra/scripts/smoke-edge.ts --window   guest-pass checks inside a window with chat ON; no model call
+// It reads targets from `terraform output`, prints PASS or FAIL per case, and never prints a request body, a
+// response body, a token, or an address (ADR-028). The rate-limit case spends the whole per-IP minute budget, so
+// it waits for a fresh minute first. A real answer needs a real Turnstile pass, so it is checked in a browser.
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
@@ -11,8 +11,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
-const chatOnly = process.argv.includes('--chat-only');
-const withChat = chatOnly || process.argv.includes('--with-chat');
+const windowMode = process.argv.includes('--window');
 
 const outputs = JSON.parse(
   execFileSync('terraform', ['-chdir=infra/stack', 'output', '-json'], {
@@ -79,56 +78,58 @@ const errorCode = async (response: Response): Promise<unknown> => {
   return first?.error?.code;
 };
 
-// One real streamed answer. Chat must be on; it waits for a fresh minute so the per-IP budget is full.
-async function streamOneAnswer(): Promise<void> {
-  const again = 60_000 - (Date.now() % 60_000) + 1500;
-  process.stdout.write(
-    `      waiting ${Math.round(again / 1000)} s for the next minute window\n`,
-  );
-  await new Promise((resolveWait) => setTimeout(resolveWait, again));
-  const started = performance.now();
-  const response = await chat(question('In one sentence, what is TypeScript?'));
-  const reader = response.body?.getReader();
-  const decoder = new TextDecoder();
-  let text = '';
-  let firstByteMs = 0;
-  let firstDeltaMs = 0;
-  for (;;) {
-    const { done, value } = reader
-      ? await reader.read()
-      : { done: true, value: undefined };
-    if (done) break;
-    firstByteMs ||= performance.now() - started;
-    text += decoder.decode(value, { stream: true });
-    if (!firstDeltaMs && text.includes('"type":"delta"'))
-      firstDeltaMs = performance.now() - started;
-  }
-  const totalMs = performance.now() - started;
-  const events = frames(text) as { type?: string; coverage?: string }[];
-  const kinds = events.map((e) => e.type);
+const guestPass = (body: string, hash = sha256(body)): Promise<Response> =>
+  fetch(`${site}/api/guest-pass`, {
+    method: 'POST',
+    body,
+    headers: {
+      'content-type': 'application/json',
+      'x-amz-content-sha256': hash,
+    },
+  });
+
+// Checks that need chat ON and make no model call: nothing here can pass the guest check, so every request is
+// refused before a provider is resolved or a quota reserved (ADR-052). Sends well under the per-IP minute limit.
+async function windowChecks(): Promise<void> {
+  const noPass = await chat(question('hello'));
   report(
-    'answer is a 200 SSE stream',
-    response.status === 200 &&
-      (response.headers.get('content-type') ?? '').includes(
-        'text/event-stream',
-      ),
+    'chat without a guest pass is refused with 403 guest_check_failed',
+    noPass.status === 403 && (await errorCode(noPass)) === 'guest_check_failed',
+    String(noPass.status),
   );
-  report('first event is accepted', kinds[0] === 'accepted');
+  const forged = await chat(question('hello'), {
+    'x-auth-token':
+      'v1.eyJrIjoieCIsImV4cCI6MX0.AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+  });
   report(
-    'answer streams deltas and ends with done (no coverage)',
-    kinds.includes('delta') &&
-      kinds.at(-1) === 'done' &&
-      events.at(-1)?.coverage === 'none',
+    'chat with a forged guest pass is refused with 403',
+    forged.status === 403 && (await errorCode(forged)) === 'guest_check_failed',
+    String(forged.status),
+  );
+  const bogus = await guestPass(
+    JSON.stringify({ token: 'XXXX.BOGUS.TOKEN.XXXX' }),
+  );
+  const bogusBody = (await bogus.json()) as { error?: string };
+  report(
+    'a bogus Turnstile token is refused with 403 (needs the real secret to be set)',
+    bogus.status === 403 && bogusBody.error === 'guest_check_failed',
+    String(bogus.status),
   );
   report(
-    'the stream is incremental, not buffered',
-    firstDeltaMs > 0 && firstDeltaMs < totalMs - 100,
-    `first byte ${Math.round(firstByteMs)} ms, first delta ${Math.round(firstDeltaMs)} ms, total ${Math.round(totalMs)} ms`,
+    'the guest-pass answer is JSON and never cached',
+    (bogus.headers.get('content-type') ?? '').includes('application/json') &&
+      (bogus.headers.get('cache-control') ?? '').includes('no-store'),
+  );
+  const malformed = await guestPass(JSON.stringify({ nope: 1 }));
+  report(
+    'a malformed guest-pass body is 400',
+    malformed.status === 400,
+    String(malformed.status),
   );
 }
 
-if (chatOnly) {
-  await streamOneAnswer();
+if (windowMode) {
+  await windowChecks();
   process.stdout.write(
     `\n${failures === 0 ? 'all checks passed' : `${failures} check(s) failed`}\n`,
   );
@@ -219,6 +220,27 @@ report(
   String(options.status),
 );
 
+// The guest-pass route refuses with chat off, and is POST-only without CORS.
+const gpOff = await guestPass(JSON.stringify({ token: 'any' }));
+report(
+  'guest-pass with chat off is a 503 and calls nothing',
+  gpOff.status === 503,
+  String(gpOff.status),
+);
+const gpOptions = await fetch(`${site}/api/guest-pass`, {
+  method: 'OPTIONS',
+  headers: {
+    origin: 'https://evil.example',
+    'access-control-request-method': 'POST',
+  },
+});
+report(
+  'guest-pass OPTIONS is refused without CORS headers',
+  gpOptions.status === 405 &&
+    ![...gpOptions.headers.keys()].some((k) => k.startsWith('access-control-')),
+  String(gpOptions.status),
+);
+
 // 5. Validation refuses before anything is reserved or spent.
 const big = await chat(
   JSON.stringify({ question: 'x', history: [], pad: 'p'.repeat(9000) }),
@@ -283,12 +305,10 @@ report(
   (eleventh.headers.get('content-type') ?? '').includes('text/event-stream') &&
     (await errorCode(eleventh)) === 'rate_limited',
 );
-if (!withChat) {
-  report(
-    'with chat off every admitted request is a 503 unavailable',
-    firstTen.every((r) => r.status === 503),
-  );
-}
+report(
+  'with chat off every admitted request is a 503 unavailable',
+  firstTen.every((r) => r.status === 503),
+);
 // A burst beyond reserved concurrency gets Lambda's own bare 429 (no SSE body, no Retry-After). The browser
 // maps that to rate_limited with a 10 second retry (ADR-049); this just records that it is observed.
 const over = await Promise.all(Array.from({ length: 12 }, probe));
@@ -300,9 +320,6 @@ const bare = over.filter(
 process.stdout.write(
   `      info: ${bare} of 12 burst requests got Lambda's bare 429\n`,
 );
-
-// 7. One real streamed answer (chat must be on).
-if (withChat) await streamOneAnswer();
 
 process.stdout.write(
   `\n${failures === 0 ? 'all checks passed' : `${failures} check(s) failed`}\n`,
