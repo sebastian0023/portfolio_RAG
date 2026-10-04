@@ -13,6 +13,7 @@
     "@fontsource/atkinson-hyperlegible-next": "5.3.0",
     "@fontsource/jetbrains-mono": "5.3.0",
     "@fontsource/sora": "5.3.0",
+    "@portfolio/shared": "*",
     "rxjs": "7.8.2",
     "tslib": "2.8.1"
   },

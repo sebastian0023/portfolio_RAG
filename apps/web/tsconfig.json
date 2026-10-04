@@ -19,7 +19,13 @@
     "skipLibCheck": true,
     "experimentalDecorators": false,
     "importHelpers": true,
-    "sourceMap": true
+    "sourceMap": true,
+    "paths": {
+      "@portfolio/shared": ["../../packages/shared/src/index.ts"],
+      "@portfolio/shared/chat-stream-schema": [
+        "../../packages/shared/src/chat-stream-schema.ts"
+      ]
+    }
   },
   "angularCompilerOptions": {
     "strictInjectionParameters": true,

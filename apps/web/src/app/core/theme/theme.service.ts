@@ -36,12 +36,15 @@ export class ThemeService {
     this.apply();
   }
 
-  set(choice: ThemeChoice): void {
+  // persist: false applies the theme for this visit only (the scenario harness uses it).
+  set(choice: ThemeChoice, options: { persist?: boolean } = {}): void {
     this.choice.set(choice);
-    try {
-      this.document.defaultView?.localStorage.setItem(STORAGE_KEY, choice);
-    } catch {
-      // Storage can be blocked; the choice still applies for this visit.
+    if (options.persist !== false) {
+      try {
+        this.document.defaultView?.localStorage.setItem(STORAGE_KEY, choice);
+      } catch {
+        // Storage can be blocked; the choice still applies for this visit.
+      }
     }
     this.apply();
   }

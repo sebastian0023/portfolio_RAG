@@ -20,7 +20,7 @@ const sourceSchema = z
     n: z.number().int().min(1),
     chunkId: z.string().min(1),
     sourceId: z.string().min(1),
-    sourceUrl: z.url({ protocol: /^https$/ }).optional(),
+    sourceUrl: z.url({ protocol: /^https$/ }).exactOptional(),
     title: z.string().min(1),
     section: z.string(),
     path: z.string().min(1),
@@ -57,7 +57,7 @@ export const chatStreamEventSchema = z.discriminatedUnion('type', [
     type: z.literal('error'),
     error: z.strictObject({
       code: z.enum(CHAT_ERROR_CODES),
-      retryAfterSeconds: z.number().int().min(1).optional(),
+      retryAfterSeconds: z.number().int().min(1).exactOptional(),
     }),
   }),
 ]);
