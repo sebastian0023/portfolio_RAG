@@ -27,6 +27,14 @@ jobs:
       - name: Audit production dependencies
         run: npm audit --omit=dev --audit-level=high
       - run: npm run check
+      # Local checks run on Node 26, but the Lambda runs Node 24 (toolchain.md). Load the real bundle there.
+      - name: Build the API bundle
+        run: npm run build -w @portfolio/api
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+      - name: Load the API bundle on the Lambda runtime
+        run: node apps/api/scripts/load-bundle.mjs
 
   terraform:
     runs-on: ubuntu-latest

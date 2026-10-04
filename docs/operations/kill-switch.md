@@ -11,13 +11,13 @@ Covers P1-08 and P1-09. Related: ADR-026, ADR-047, R-03, R-06, and the runbook e
 | Action                   | `APPLY_IAM_POLICY`, `AUTOMATIC`, on actual spend at 100 percent of `bedrock-monthly`. Attaches `portfolio-v2-prod-deny-model-invoke` to the listed roles.                                                                                  |
 | Deny policy              | Denies `bedrock:InvokeModel`, `InvokeModelWithResponseStream`, `Converse`, `ConverseStream`, and `bedrock-mantle:*` on every resource. One policy covers both endpoint families, which corrects the original InvokeModel-only plan (R-03). |
 | Execution role           | `portfolio-v2-prod-budget-action`, assumable only by AWS Budgets for budgets named `portfolio-v2-prod-*`. May attach or detach only that deny policy, only on the listed roles.                                                            |
-| Target roles             | `portfolio-v2-prod-killswitch-probe` today. Phase 3 adds the API execution role to the same list.                                                                                                                                          |
+| Target roles             | `portfolio-v2-prod-killswitch-probe` and, from Phase 3, the API execution role `portfolio-v2-prod-api`. The list is the module input `additional_kill_target_roles`, passed from the stack by name.                                        |
 
 The service budget deliberately over-approximates: other projects' Bedrock spend counts toward it (ADR-047). That fails safe, because the deny policy touches only portfolio-v2 roles.
 
 ### Fallback, designed but not built
 
-If the native action ever proves unusable: budget notification, then SNS, then a small independent Lambda that calls `PutFunctionConcurrency(0)` on the API function. It stops the whole API, including admin paths, and in-flight requests finish. It is not built because the native action is supported and stored (below), and no API function exists until Phase 3.
+If the native action ever proves unusable: budget notification, then SNS, then a small independent Lambda that calls `PutFunctionConcurrency(0)` on the API function. It stops the whole API, including admin paths, and in-flight requests finish. It is not built because the native action is supported and stored (below). The API function now exists (Phase 3), so the fallback can be built if the native action is ever judged insufficient.
 
 ## Drill, 2026-10-04
 
@@ -51,3 +51,10 @@ Execution-role scope, checked with the IAM policy simulator: attach and detach o
 5. Restore chat only after the bounded test passes. Record the previous attachment state, the time, and the reason.
 
 Other principals (the operator role, evaluation and ingestion roles) are not affected by this switch and need their own budget scope in Phases 5 and 6.
+
+## Phase 3: the API role is a target
+
+`portfolio-v2-prod-api` is a target, so the budget action attaches the same deny policy to it. The API treats the resulting `AccessDeniedException` as an outage: before an answer begins the visitor gets a plain `unavailable` refusal, mid-answer it is an interruption (ADR-049). To be recorded in the Phase 3 evidence once deployed:
+
+1. Simulator check: the budget-action role may attach and detach the deny policy on `portfolio-v2-prod-api`, and is denied for the operator role and for any role outside the prefix.
+2. Drill during a smoke window: attach the deny policy to the API role by hand, send one message, expect `unavailable` within about 15 seconds, detach, and expect answers again. Record the timings next to the table above.

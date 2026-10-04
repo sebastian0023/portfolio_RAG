@@ -4,13 +4,14 @@ Covers P1-03 and spike R-07 (Angular/Vitest integration). Pins live in the root 
 
 ## Pinned versions
 
-| Component  | Pin              | Why it is allowed                                                           |
-| ---------- | ---------------- | --------------------------------------------------------------------------- |
-| Node       | `>=26.0.0 <27`   | `@angular/cli` 22.2.1 engines: `^22.22.3 \|\| ^24.15.0 \|\| >=26.0.0`       |
-| npm        | `>=11 <12`       | Matches `packageManager` (`npm@11.19.1`)                                    |
-| TypeScript | `6.0.3` (exact)  | `@angular/build` 22.2.1 peer: `>=6.0 <6.1`                                  |
-| Vitest     | `5.0.3` (exact)  | `@angular/build` 22.2.1 peer: `^4.0.8 \|\| ^5.0.0`                          |
-| Angular    | `22.2.1` (exact) | Installed by P2-01 in `apps/web`; `@angular/cdk` and `@angular/build` match |
+| Component  | Pin              | Why it is allowed                                                                             |
+| ---------- | ---------------- | --------------------------------------------------------------------------------------------- |
+| Node       | `>=26.0.0 <27`   | `@angular/cli` 22.2.1 engines: `^22.22.3 \|\| ^24.15.0 \|\| >=26.0.0`                         |
+| npm        | `>=11 <12`       | Matches `packageManager` (`npm@11.19.1`)                                                      |
+| TypeScript | `6.0.3` (exact)  | `@angular/build` 22.2.1 peer: `>=6.0 <6.1`                                                    |
+| Vitest     | `5.0.3` (exact)  | `@angular/build` 22.2.1 peer: `^4.0.8 \|\| ^5.0.0`                                            |
+| Angular    | `22.2.1` (exact) | Installed by P2-01 in `apps/web`; `@angular/cdk` and `@angular/build` match                   |
+| esbuild    | `0.28.2` (exact) | Direct devDependency of `apps/api`; bundles the Lambda. Same version Angular already resolves |
 
 ## Evidence (2026-10-04)
 
@@ -36,3 +37,11 @@ A throwaway app created with `npx @angular/cli@22.2.1 new --ssr=false` in a scra
 `npm audit --omit=dev` reports 0 vulnerabilities. `npm audit` reports 4 high-severity findings, all in one development-only chain: `braces` (stack exhaustion on deeply nested glob patterns, GHSA-vfj7-8cjw-p6xm) reached through `micromatch`, `@boundaries/elements`, and `eslint-plugin-boundaries`. The suggested `npm audit fix --force` installs `eslint-plugin-boundaries@1.1.1`, a breaking downgrade that would invalidate the v7 policy syntax used here, so it is **not** applied.
 
 Accepted for now: the code only runs at lint time on this repository's own file paths, never on request data or in a deployed artifact. P1-11 adds `npm audit --omit=dev --audit-level=high` as a CI gate; P7-03 re-evaluates the development chain and the plugin choice.
+
+## Lambda runtime and API bundle (Phase 3)
+
+- **Runtime `nodejs24.x`.** It is generally available and supported until 2028-04-30. `nodejs26.x` is a public preview (not for production, no SLA) with general availability expected in November 2026, so the repository stays on Node 26 locally and in CI while the function runs on Node 24. The bundle targets `node24`, uses only standard Node APIs (`AbortSignal.any` and `AbortSignal.timeout` exist in Node 24), and carries its own AWS SDK, so the runtime's bundled SDK version is irrelevant. Moving to `nodejs26.x` is a Phase 7 task once it is generally available.
+- **esbuild needs no install-script approval.** It runs from its platform binary package, which is already installed for Angular's build; the unapproved `install` script is only an optimization. The bundle test (`tests/build/api-bundle.test.ts`) proves two builds are byte-identical, which is what makes a CI plan and an operator plan agree.
+- **Production dependencies of the API**, all exact and shared at one AWS SDK version: `hono`, `@aws-sdk/client-ssm`, `@aws-sdk/client-bedrock-runtime`, `@aws-sdk/client-dynamodb`, and `zod`. `npm audit --omit=dev` reports 0 vulnerabilities. The bundle is about 1.8 MB, under the 3 MB test budget.
+- **Zod under a strict CSP.** Zod 4 probes `new Function` to decide whether to compile validators, and a CSP without `unsafe-eval` reports that probe as a violation even though the error is caught. The shared browser schema module sets `z.config({ jitless: true })`; the production Playwright project fails on any CSP violation.
+- **Web bundle budget.** Validating events in the browser adds Zod to the initial bundle, which is now about 690 kB raw (about 140 kB transferred, the earlier 243 kB raw plus the validator). The warning threshold moved from 500 kB to 750 kB; the 1 MB error threshold is unchanged.

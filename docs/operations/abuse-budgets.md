@@ -43,12 +43,16 @@ Two stages, cheapest first (ADR-016). Windows are UTC calendar days, expressed i
 | Stage    | Key                                        | Provisional limit | Runs before                      |
 | -------- | ------------------------------------------ | ----------------- | -------------------------------- |
 | Pre-auth | trusted client IP, per minute              | 10 requests       | JWT or Turnstile check           |
-| Pre-auth | global, per minute                         | 60 requests       | JWT or Turnstile check           |
+| Pre-auth | global, per minute                         | 40 requests       | JWT or Turnstile check           |
 | Quota    | guest (verified Turnstile), per IP per day | 3 messages        | Embedding, retrieval, generation |
 | Quota    | signed-in user (verified `sub`), per day   | 10 messages       | Embedding, retrieval, generation |
 | Quota    | global per day, guests and users combined  | 30 messages       | Embedding, retrieval, generation |
 
 The IP is taken only from the trusted CloudFront-forwarded viewer address, never from a client-supplied header. A JWT `sub` is used as a quota key only after the token is fully verified (R-15).
+
+**Phase 3 changes (ADR-050).** The global per-minute limit is 40, not 60, because Bedrock allows 50 Haiku requests a minute on this account. Until Phase 4 a temporary site-wide daily cap (`globalPerDay`, 30) is a hard stop, and `chat_enabled` is honored from the first deploy. An IPv6 viewer is keyed by its /64, because one host can rotate addresses inside it. The viewer address comes from the `CloudFront-Viewer-Address` header that the origin request policy forwards; a missing or ambiguous value refuses the request.
+
+**Phase 3 stage order**, cheapest first, nothing paid before the last stage: route and method, content type, byte cap (read at most 8 KB), JSON and schema, config load and limit re-check, trusted IP, per-IP and global per-minute rate (one atomic transaction, so a refused viewer does not use global capacity), `chat_enabled`, provider resolution, daily cap (reserved, never refunded), then the model call. The client trims its own history to fit the byte cap before hashing, and the server re-bounds it to the last four turns and to alternating roles.
 
 ### Reservation semantics
 
