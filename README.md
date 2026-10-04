@@ -10,7 +10,7 @@ The [Notion plan](https://app.notion.com/p/3efc9c3293d981c4ab1bcf5e2dad3d55) tra
 
 ## Local checks
 
-Use Node 26 and npm 11. Run `npm ci`, then `npm run check` for lint, typecheck, formatting, and Vitest. `npm run test` runs one placeholder test in each workspace. Terraform and Checkov CI skeletons explicitly skip empty infra and fail once Terraform files appear until real checks are wired.
+Use Node 26 and npm 11. Run `npm ci`, then `npm run check` for lint, typecheck, formatting, and Vitest. `npm run test` runs one placeholder test in each workspace. CI also runs Terraform `fmt` and `validate`, a module allowlist, and Checkov over `infra/`. A read-only `plan` job joins once the CI plan role exists (Phase 1).
 
 ## Git workflow
 

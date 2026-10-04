@@ -14,7 +14,7 @@
     "packages/shared"
   ],
   "scripts": {
-    "lint": "eslint apps packages tests",
+    "lint": "eslint apps packages tests infra/scripts",
     "typecheck": "tsc -b apps/web apps/api packages/shared tests",
     "test": "vitest run",
     "format:check": "prettier --check .",

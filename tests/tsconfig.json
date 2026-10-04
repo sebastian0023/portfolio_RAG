@@ -1,6 +1,10 @@
 {
   "extends": "../tsconfig.base.json",
-  "compilerOptions": { "rootDir": ".", "outDir": "dist", "noEmit": false },
-  "include": ["**/*.ts"],
+  "compilerOptions": {
+    "rootDir": "..",
+    "outDir": "dist",
+    "rewriteRelativeImportExtensions": true
+  },
+  "include": ["**/*.ts", "../infra/scripts/**/*.ts"],
   "exclude": ["dist"]
 }
