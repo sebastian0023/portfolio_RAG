@@ -1,0 +1,53 @@
+{
+  "prefix": "/portfolio-v2/prod",
+  "parameters": {
+    "chat_enabled": {
+      "managed": "operator",
+      "format": "boolean",
+      "description": "Off switch for chat (ADR-027). Operators flip it; Terraform only creates it, with chat off.",
+      "default": false
+    },
+    "active_index": {
+      "managed": "operator",
+      "format": "string",
+      "description": "Name of the live vector index, or 'none' before Phase 5 (ADR-019). Changed only by index promotion.",
+      "default": "none"
+    },
+    "llm_config": {
+      "managed": "operator",
+      "format": "json",
+      "description": "Provider and model as one coherent value (ADR-021). Must be a validated pair; changed by model promotion.",
+      "default": {
+        "provider": "bedrock-runtime",
+        "model": "us.anthropic.claude-haiku-4-5-20251001-v1:0"
+      }
+    },
+    "limits": {
+      "managed": "terraform",
+      "format": "json",
+      "description": "Request caps, rate limits, and quotas. Provisional values from docs/operations/abuse-budgets.md.",
+      "default": {
+        "questionMaxChars": 500,
+        "requestMaxBytes": 8192,
+        "historyTurns": 4,
+        "retrievedChunks": 5,
+        "chunkMaxTokens": 800,
+        "promptMaxTokens": 6000,
+        "outputMaxTokens": 400,
+        "timeoutSeconds": 30,
+        "preAuthPerIpPerMinute": 10,
+        "preAuthGlobalPerMinute": 60,
+        "guestPerIpPerDay": 3,
+        "userPerDay": 10,
+        "globalPerDay": 30
+      }
+    }
+  },
+  "deferred": {
+    "turnstile_secret": {
+      "type": "SecureString",
+      "phase": 4,
+      "note": "The name is provisioned by Terraform in Phase 4. The value is injected out of band and never appears in source, plans, outputs, or logs (ADR-023, R-18)."
+    }
+  }
+}
