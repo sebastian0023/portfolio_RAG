@@ -1,7 +1,8 @@
 name: OIDC negative test
 
 # The plan role trusts only pull_request runs of this repository (ADR-008).
-# This workflow runs from a branch push and must FAIL to assume the role; it passes only when AWS denies it.
+# This workflow runs from a branch push (sub ends in ref:refs/heads/...) and must FAIL to assume the role;
+# it passes only when AWS denies it. The pull_request plan job in pr-checks.yml is the matching positive case.
 on:
   workflow_dispatch:
   push:

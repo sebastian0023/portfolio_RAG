@@ -17,7 +17,8 @@ Allowed module names: `bootstrap`, `oidc`, `edge`, `web`, `api`, `auth`, `storag
 
 - Names: `portfolio-v2-<env>-<concern>`, with `env` fixed to `prod`. SSM parameters live under `/portfolio-v2/prod/`.
 - Provider `default_tags`: `Application=portfolio-v2`, `Environment=prod`, `CostScope=portfolio-v2-prod`, `ManagedBy=terraform`.
-- The GitHub OIDC provider is shared with other projects. It is only ever read through a data source.
+- The GitHub OIDC provider is shared with other projects. It is only ever read through a data source, by ARN.
+- Repositories with immutable subject claims put the numeric owner and repository ids in the token: `repo:<owner>@<owner_id>/<repo>@<repo_id>:pull_request`. Check `gh api repos/<owner>/<repo>/actions/oidc/customization/sub` before writing a trust policy; the plain `repo:<owner>/<repo>:...` form never matches such a repository.
 - Never reference another project's resources, state bucket, or lock table.
 - No secret values, account IDs, `*.tfvars`, `backend.hcl`, state, or plan files in Git. Secret names are provisioned here; values are injected out of band (ADR-023, R-18).
 
