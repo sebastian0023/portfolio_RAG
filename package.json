@@ -15,8 +15,8 @@
   ],
   "scripts": {
     "lint": "eslint apps packages tests infra/scripts",
-    "typecheck": "tsc -b apps/web apps/api packages/shared tests && tsc -p apps/api/tsconfig.test.json",
-    "test": "vitest run",
+    "typecheck": "tsc -b apps/api packages/shared tests && tsc -p apps/api/tsconfig.test.json && npm run build -w @portfolio/web",
+    "test": "vitest run && npm run test -w @portfolio/web",
     "format:check": "prettier --check .",
     "format:write": "prettier --write .",
     "check": "npm run lint && npm run typecheck && npm run format:check && npm run test"
@@ -26,6 +26,7 @@
     "@commitlint/config-conventional": "21.2.3",
     "@eslint/js": "10.0.1",
     "@types/node": "26.6.3",
+    "angular-eslint": "22.5.0",
     "eslint": "10.11.0",
     "eslint-import-resolver-typescript": "3.10.1",
     "eslint-plugin-boundaries": "7.2.0",

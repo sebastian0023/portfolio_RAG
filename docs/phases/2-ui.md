@@ -1,6 +1,6 @@
 # Phase 2: UI
 
-Status: Not started
+Status: In progress
 
 Branch: `phase/2-ui`
 

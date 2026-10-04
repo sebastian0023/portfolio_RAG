@@ -4,13 +4,13 @@ Covers P1-03 and spike R-07 (Angular/Vitest integration). Pins live in the root 
 
 ## Pinned versions
 
-| Component  | Pin                | Why it is allowed                                                     |
-| ---------- | ------------------ | --------------------------------------------------------------------- |
-| Node       | `>=26.0.0 <27`     | `@angular/cli` 22.2.1 engines: `^22.22.3 \|\| ^24.15.0 \|\| >=26.0.0` |
-| npm        | `>=11 <12`         | Matches `packageManager` (`npm@11.19.1`)                              |
-| TypeScript | `6.0.3` (exact)    | `@angular/build` 22.2.1 peer: `>=6.0 <6.1`                            |
-| Vitest     | `5.0.3` (exact)    | `@angular/build` 22.2.1 peer: `^4.0.8 \|\| ^5.0.0`                    |
-| Angular    | `22.2.1` (Phase 2) | Not installed yet; added by P2-01                                     |
+| Component  | Pin              | Why it is allowed                                                           |
+| ---------- | ---------------- | --------------------------------------------------------------------------- |
+| Node       | `>=26.0.0 <27`   | `@angular/cli` 22.2.1 engines: `^22.22.3 \|\| ^24.15.0 \|\| >=26.0.0`       |
+| npm        | `>=11 <12`       | Matches `packageManager` (`npm@11.19.1`)                                    |
+| TypeScript | `6.0.3` (exact)  | `@angular/build` 22.2.1 peer: `>=6.0 <6.1`                                  |
+| Vitest     | `5.0.3` (exact)  | `@angular/build` 22.2.1 peer: `^4.0.8 \|\| ^5.0.0`                          |
+| Angular    | `22.2.1` (exact) | Installed by P2-01 in `apps/web`; `@angular/cdk` and `@angular/build` match |
 
 ## Evidence (2026-10-04)
 
@@ -20,11 +20,12 @@ A throwaway app created with `npx @angular/cli@22.2.1 new --ssr=false` in a scra
 
 - Move TypeScript only within the range Angular's build declares. Check `npm view @angular/build peerDependencies` before bumping it.
 - Keep one Vitest version across the workspace so the Angular builder and the root `vitest run` projects agree.
-- `apps/web` currently has a placeholder Vitest project. P2-01 and P2-08 decide how Angular's test builder and the root projects run together in one CI command; R-07 stays open until a real component test and a backend test pass in a single command.
+- `apps/web` runs its tests with Angular's `@angular/build:unit-test` builder (Vitest runner, jsdom). It is not a root Vitest project. The root `npm test` runs `vitest run` for the other projects and then `ng test --watch=false`, so one command covers the Angular component tests and the backend, shared, and architecture tests (R-07).
+- `apps/web` is not part of `tsc -b`. Its templates are type-checked by `ng build` (`strictTemplates`), which `npm run typecheck` runs after `tsc`.
 
 ## Install scripts
 
-`npm ci` warns that `fsevents` and `unrs-resolver` have install scripts not covered by `allowScripts`. Tests, lint, and typecheck pass without them, so the owner decided to leave them unapproved until something needs them. Revisit if a native build step is added.
+`npm ci` warns that `fsevents`, `unrs-resolver`, `esbuild`, `lmdb`, `msgpackr-extract`, and `@parcel/watcher` have install scripts not covered by `allowScripts`. Tests, lint, typecheck, and `ng build` pass without them (verified in P2-01), so they stay unapproved until something needs them. Revisit if a native build step is added.
 
 ## Architecture guard
 
