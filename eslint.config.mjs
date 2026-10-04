@@ -70,4 +70,28 @@ export default tseslint.config(
       ],
     },
   },
+  {
+    // ADR-036: business logic and shared contracts never touch cloud or provider SDKs.
+    files: ['apps/api/src/core/**/*.ts', 'packages/shared/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: [
+                '@aws-sdk/*',
+                '@smithy/*',
+                'aws-jwt-verify',
+                '@anthropic-ai/*',
+                'openai',
+              ],
+              message:
+                'SDKs belong in apps/api/src/adapters; core and shared depend on ports only.',
+            },
+          ],
+        },
+      ],
+    },
+  },
 );
