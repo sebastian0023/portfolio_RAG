@@ -71,7 +71,7 @@ Mitigations and evidence live in [Spikes and Risks](https://app.notion.com/p/9f1
 
 | Item                                                   | Why it is open                                                                 | Closes in                             |
 | ------------------------------------------------------ | ------------------------------------------------------------------------------ | ------------------------------------- |
-| Anthropic use-case form for Haiku 4.5                  | Only the account owner can submit it; Haiku fails after one call until then    | Before P3-04                          |
+| Anthropic use-case form for Haiku 4.5                  | Done by the owner; Haiku verified with 10 of 10 calls                          | Closed                                |
 | Automatic budget trigger                               | Needs real spend to reach 100 percent; Gemma's billing service name is unknown | P7-04, P6-03                          |
 | Billed prices for Titan, Haiku, Gemma                  | Cost Explorer lags by up to a day                                              | Next session, before P3-04            |
 | Angular component test and backend test in one command | Angular is added in Phase 2                                                    | P2-08                                 |
