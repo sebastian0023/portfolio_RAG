@@ -14,3 +14,14 @@ crash.log
 !.env.example
 .DS_Store
 .claude/settings.local.json
+
+# Terraform backend settings and plans stay local (R-18)
+backend.hcl
+*.tfplan
+plan.json
+
+# iCloud/Finder conflict copies such as "file 2.ts"
+* [0-9].*
+
+# Build artifact of the OAC spike
+infra/spikes/**/handler.zip

@@ -4,14 +4,18 @@
   "version": "0.0.0",
   "type": "module",
   "packageManager": "npm@11.19.1",
+  "engines": {
+    "node": ">=26.0.0 <27",
+    "npm": ">=11.0.0 <12"
+  },
   "workspaces": [
     "apps/web",
     "apps/api",
     "packages/shared"
   ],
   "scripts": {
-    "lint": "eslint apps packages",
-    "typecheck": "tsc -b apps/web apps/api packages/shared",
+    "lint": "eslint apps packages tests infra/scripts",
+    "typecheck": "tsc -b apps/web apps/api packages/shared tests && tsc -p apps/api/tsconfig.test.json",
     "test": "vitest run",
     "format:check": "prettier --check .",
     "format:write": "prettier --write .",
@@ -28,6 +32,6 @@
     "prettier": "3.9.8",
     "typescript": "6.0.3",
     "typescript-eslint": "8.70.0",
-    "vitest": "5.0.1"
+    "vitest": "5.0.3"
   }
 }
