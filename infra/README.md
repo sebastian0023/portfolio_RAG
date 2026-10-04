@@ -1,6 +1,6 @@
 # Infrastructure
 
-Terraform for the single production stack (ADR-005, ADR-032, ADR-047). Nothing here is applied by CI: pull requests run a read-only plan, and the owner applies from a reviewed commit with the SSO profile (ADR-035, R-13).
+Terraform for the single production stack (ADR-005, ADR-032, ADR-047). Nothing here is applied by CI: pull requests run a read-only plan, and the owner applies from a reviewed commit with the MFA-gated profile (ADR-035, R-13).
 
 ## Layout
 
@@ -32,11 +32,10 @@ Fails when a plan destroys or replaces a protected stateful resource, changes a 
 
 ## Bootstrap and state migration (owner, once)
 
-Prerequisite: SSO profile `portfolio-v2` works ([access guide](../docs/operations/access.md)).
+Prerequisite: the MFA-gated profile `portfolio-v2` works ([access guide](../docs/operations/access.md)).
 
 ```sh
-export AWS_PROFILE=portfolio-v2 AWS_REGION=us-east-1
-aws sso login
+export AWS_PROFILE=portfolio-v2 AWS_REGION=us-east-1   # the CLI prompts for the MFA code
 cd infra/bootstrap
 terraform init
 terraform plan -out bootstrap.tfplan
