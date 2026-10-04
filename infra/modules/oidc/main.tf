@@ -137,6 +137,71 @@ data "aws_iam_policy_document" "plan" {
     ]
     resources = ["arn:aws:budgets::${var.account_id}:budget/portfolio-v2-*"]
   }
+
+  statement {
+    sid = "LambdaRead"
+    actions = [
+      "lambda:GetAlias",
+      "lambda:GetFunction",
+      "lambda:GetFunctionCodeSigningConfig",
+      "lambda:GetFunctionConcurrency",
+      "lambda:GetFunctionConfiguration",
+      "lambda:GetFunctionRecursionConfig",
+      "lambda:GetFunctionUrlConfig",
+      "lambda:GetPolicy",
+      "lambda:GetRuntimeManagementConfig",
+      "lambda:ListTags",
+      "lambda:ListVersionsByFunction",
+    ]
+    resources = [
+      "arn:aws:lambda:*:${var.account_id}:function:portfolio-v2-*",
+      "arn:aws:lambda:*:${var.account_id}:function:portfolio-v2-*:*",
+    ]
+  }
+
+  # CloudFront identifiers are random, so these reads cannot be scoped to the portfolio-v2 prefix.
+  statement {
+    sid = "CloudFrontRead"
+    actions = [
+      "cloudfront:GetCachePolicy",
+      "cloudfront:GetDistribution",
+      "cloudfront:GetDistributionConfig",
+      "cloudfront:GetOriginAccessControl",
+      "cloudfront:GetOriginRequestPolicy",
+      "cloudfront:GetResponseHeadersPolicy",
+      "cloudfront:ListTagsForResource",
+    ]
+    resources = ["*"] #checkov:skip=CKV_AWS_356:CloudFront resource IDs are generated, so reads cannot be scoped by name.
+  }
+
+  statement {
+    sid = "DynamoDbRead"
+    actions = [
+      "dynamodb:DescribeContinuousBackups",
+      "dynamodb:DescribeTable",
+      "dynamodb:DescribeTimeToLive",
+      "dynamodb:ListTagsOfResource",
+    ]
+    resources = ["arn:aws:dynamodb:*:${var.account_id}:table/portfolio-v2-*"]
+  }
+
+  statement {
+    sid       = "LogGroupList"
+    actions   = ["logs:DescribeLogGroups"]
+    resources = ["*"] #checkov:skip=CKV_AWS_356:DescribeLogGroups does not support resource-level permissions.
+  }
+
+  statement {
+    sid       = "LogGroupTagsRead"
+    actions   = ["logs:ListTagsForResource"]
+    resources = ["arn:aws:logs:*:${var.account_id}:log-group:/aws/lambda/portfolio-v2-*"]
+  }
+
+  statement {
+    sid       = "BedrockInferenceProfileRead"
+    actions   = ["bedrock:GetInferenceProfile"]
+    resources = ["arn:aws:bedrock:*:${var.account_id}:inference-profile/us.anthropic.claude-haiku-4-5-20251001-v1:0"]
+  }
 }
 
 resource "aws_iam_role_policy" "plan" {

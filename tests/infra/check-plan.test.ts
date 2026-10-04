@@ -114,6 +114,73 @@ describe('plan guard (ADR-033, ADR-047)', () => {
     for (const plan of plans) expect(checkPlan(plan)).toEqual([]);
   });
 
+  test('allows the alias, headers policy, and counters table under the prefix', () => {
+    const plans = [
+      change('aws_lambda_alias', ['create'], {
+        name: 'live',
+        function_name: 'portfolio-v2-prod-api',
+      }),
+      change('aws_cloudfront_response_headers_policy', ['create'], {
+        name: 'portfolio-v2-prod-spa',
+      }),
+      change('aws_dynamodb_table', ['create'], {
+        name: 'portfolio-v2-prod-counters',
+      }),
+    ];
+    for (const plan of plans) expect(checkPlan(plan)).toEqual([]);
+  });
+
+  test('judges the alias by its function, not its own name', () => {
+    expect(
+      checkPlan(
+        change('aws_lambda_alias', ['update'], {
+          name: 'live',
+          function_name: 'lift-dev-get-today',
+        }),
+      ),
+    ).toHaveLength(1);
+  });
+
+  test('allows an alias whose function is created in the same plan', () => {
+    const plan: Plan = {
+      resource_changes: [
+        {
+          address: 'aws_lambda_alias.live',
+          mode: 'managed',
+          type: 'aws_lambda_alias',
+          change: {
+            actions: ['create'],
+            before: null,
+            after: { name: 'live' },
+            after_unknown: { function_name: true },
+          },
+        },
+      ],
+    };
+    expect(checkPlan(plan)).toEqual([]);
+  });
+
+  test('rejects deleting or replacing the counters table and foreign table names', () => {
+    for (const actions of [
+      ['delete'],
+      ['delete', 'create'],
+      ['create', 'delete'],
+    ]) {
+      expect(
+        checkPlan(
+          change('aws_dynamodb_table', actions, {
+            name: 'portfolio-v2-prod-counters',
+          }),
+        ).length,
+      ).toBeGreaterThan(0);
+    }
+    expect(
+      checkPlan(
+        change('aws_dynamodb_table', ['create'], { name: 'lift-dev-counters' }),
+      ),
+    ).toHaveLength(1);
+  });
+
   test("rejects another project's log group and function", () => {
     expect(
       checkPlan(
