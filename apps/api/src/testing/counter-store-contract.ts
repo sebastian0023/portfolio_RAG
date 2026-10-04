@@ -80,11 +80,23 @@ export function runCounterStoreContract(
       expect(read('global')).toBe(1);
     });
 
+    test('read returns 0 for a key never written and the count after reservations', async () => {
+      const { store } = harness.build();
+      expect(await store.read('never')).toBe(0);
+      await store.reserve(item('k', 5));
+      await store.reserve(item('k', 5));
+      expect(await store.read('k')).toBe(2);
+      await store.reserveAll([item('k', 5), item('other', 5)]);
+      expect(await store.read('k')).toBe(3);
+      expect(await store.read('other')).toBe(1);
+    });
+
     test('an unavailable store throws instead of admitting', async () => {
       const { store, breakStore } = harness.build();
       breakStore();
       await expect(store.reserve(item('k', 3))).rejects.toThrow();
       await expect(store.reserveAll([item('k', 3)])).rejects.toThrow();
+      await expect(store.read('k')).rejects.toThrow();
     });
   });
 }

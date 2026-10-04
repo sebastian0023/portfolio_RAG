@@ -1,6 +1,8 @@
 import {
+  GetItemCommand,
   TransactWriteItemsCommand,
   UpdateItemCommand,
+  type GetItemCommandOutput,
   type TransactWriteItemsCommandOutput,
   type UpdateItemCommandOutput,
 } from '@aws-sdk/client-dynamodb';
@@ -13,6 +15,7 @@ import type {
 
 export interface DynamoClientLike {
   send(command: UpdateItemCommand): Promise<UpdateItemCommandOutput>;
+  send(command: GetItemCommand): Promise<GetItemCommandOutput>;
   send(
     command: TransactWriteItemsCommand,
   ): Promise<TransactWriteItemsCommandOutput>;
@@ -96,5 +99,25 @@ export class DynamoDbCounterStore implements CounterStore {
       }
       throw error;
     }
+  }
+
+  async read(key: string): Promise<number> {
+    const output = await this.client.send(
+      new GetItemCommand({
+        TableName: this.table,
+        Key: { pk: { S: key } },
+        ConsistentRead: true,
+        ProjectionExpression: '#c',
+        ExpressionAttributeNames: { '#c': 'c' },
+      }),
+    );
+    // No item means the key was never reserved. Anything else must be a whole number, or the store is
+    // not trusted (fail closed).
+    if (output.Item === undefined) return 0;
+    const count = Number(output.Item['c']?.N);
+    if (!Number.isInteger(count) || count < 0) {
+      throw new Error('counter store returned an unexpected response');
+    }
+    return count;
   }
 }
