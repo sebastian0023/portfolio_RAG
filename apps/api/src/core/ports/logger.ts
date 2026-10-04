@@ -2,7 +2,7 @@
 // carry a question, an answer, a header value, or a raw IP address.
 export interface LogEvent {
   readonly requestId: string;
-  readonly stage: 'admission' | 'stream' | 'transport';
+  readonly stage: 'admission' | 'stream' | 'model' | 'transport';
   readonly outcome:
     'rejected' | 'completed' | 'interrupted' | 'client_closed' | 'failed';
   readonly status?: number;

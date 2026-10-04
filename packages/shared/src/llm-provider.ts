@@ -1,5 +1,13 @@
+// One earlier message. Providers receive native multi-turn history; the caller has already normalised it to
+// alternate roles, start with a user turn, and end with an assistant turn.
+export interface LLMTurn {
+  readonly role: 'user' | 'assistant';
+  readonly text: string;
+}
+
 export interface LLMRequest {
   readonly systemPrompt: string;
+  readonly history: readonly LLMTurn[];
   readonly userMessage: string;
   readonly maxOutputTokens: number;
 }

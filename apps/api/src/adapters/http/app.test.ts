@@ -7,7 +7,12 @@ import {
   schemaStage,
 } from '../../core/chat/admission.js';
 import type { ChatService } from '../../core/chat/chat-handler.js';
-import { configFrom, memoryLogger, rawConfig } from '../../testing/helpers.js';
+import {
+  configFrom,
+  wiringStage,
+  memoryLogger,
+  rawConfig,
+} from '../../testing/helpers.js';
 import { createHttpApp } from './app.js';
 
 const answering: ChatService = {
@@ -28,6 +33,7 @@ function app(service: ChatService = answering, raw = rawConfig()) {
       byteCapStage,
       schemaStage,
       configStage(configFrom(raw)),
+      wiringStage,
     ],
     service,
     logger: memoryLogger(),

@@ -5,7 +5,11 @@ import {
   type ConfigSource,
 } from '../core/config/cached-config.js';
 import type { LogEvent, Logger } from '../core/ports/logger.js';
-import type { AdmissionContext } from '../core/chat/admission.js';
+import type {
+  AdmissionContext,
+  AdmissionStage,
+} from '../core/chat/admission.js';
+import { scriptedProvider } from './fake-llm-provider.js';
 
 interface Manifest {
   parameters: Record<string, { default: unknown }>;
@@ -77,3 +81,11 @@ export function context(
     ...rest,
   };
 }
+
+// Stands in for the provider and daily-cap stages that later PRs add, so handler-level tests can reach the
+// service.
+export const wiringStage: AdmissionStage = (ctx) => {
+  ctx.provider = scriptedProvider([]);
+  ctx.quota = { principal: 'guest', left: 29, limit: 30 };
+  return Promise.resolve(undefined);
+};

@@ -7,7 +7,12 @@ import {
   schemaStage,
 } from '../../core/chat/admission.js';
 import type { ChatService } from '../../core/chat/chat-handler.js';
-import { configFrom, context, rawConfig } from '../../testing/helpers.js';
+import {
+  configFrom,
+  wiringStage,
+  context,
+  rawConfig,
+} from '../../testing/helpers.js';
 import { createHttpApp } from '../http/app.js';
 import { createStreamHandler } from '../lambda/stream-handler.js';
 import { createJsonLogger } from './json-logger.js';
@@ -37,6 +42,7 @@ describe('log redaction (ADR-028)', () => {
         byteCapStage,
         schemaStage,
         configStage(configFrom(rawConfig())),
+        wiringStage,
       ],
       service,
       logger,
