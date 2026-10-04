@@ -4,6 +4,7 @@ import {
   CachedConfig,
   type ConfigSource,
 } from '../core/config/cached-config.js';
+import type { GuestPassHandler } from '../core/guest/guest-pass-handler.js';
 import type { LogEvent, Logger } from '../core/ports/logger.js';
 import type {
   AdmissionContext,
@@ -89,3 +90,7 @@ export const wiringStage: AdmissionStage = (ctx) => {
   ctx.quota = { left: 29, limit: 30 };
   return Promise.resolve(undefined);
 };
+
+// For tests that do not exercise the guest-pass route: it refuses, as an unconfigured deployment would.
+export const refusingGuestPass: GuestPassHandler = () =>
+  Promise.resolve({ status: 503, body: { error: 'unavailable' } });

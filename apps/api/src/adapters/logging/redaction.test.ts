@@ -10,6 +10,7 @@ import type { ChatService } from '../../core/chat/chat-handler.js';
 import {
   configFrom,
   wiringStage,
+  refusingGuestPass,
   context,
   rawConfig,
 } from '../../testing/helpers.js';
@@ -48,7 +49,11 @@ describe('log redaction (ADR-028)', () => {
       logger,
     });
     const handler = createStreamHandler({
-      app: createHttpApp({ handleChat, newRequestId: () => 'req' }),
+      app: createHttpApp({
+        handleChat,
+        handleGuestPass: refusingGuestPass,
+        newRequestId: () => 'req',
+      }),
       httpResponseStream: { from: (stream) => stream },
       logger,
       newRequestId: () => 'req',

@@ -74,3 +74,8 @@ export type ChatStreamEvent =
 export const CHAT_API_PATH = '/api/chat';
 // Hard cap on the request body in bytes. The server also enforces limits.requestMaxBytes from SSM.
 export const MAX_REQUEST_BYTES = 8192;
+
+// The guest pass (ADR-052): the browser trades a Turnstile token for a signed one-hour pass and sends the pass
+// with every question in this header, which the edge already forwards.
+export const GUEST_PASS_PATH = '/api/guest-pass';
+export const AUTH_HEADER = 'x-auth-token';
