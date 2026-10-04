@@ -49,7 +49,7 @@ Mitigations and evidence live in [Spikes and Risks](https://app.notion.com/p/9f1
 | P3-03 | Hono routing, a Lambda streaming adapter that aborts on disconnect, SSM config source, metadata-only logger, one composition root (production-only). SSE wire format and status table in ADR-049.                                                          |
 | P3-04 | Provider registry, Bedrock Converse adapter (zero retries, schema-checked stream, no raw errors), plain chat service, the ADR-045 contract suite run against the fake and the adapter.                                                                     |
 | P3-05 | Trusted viewer address (IPv6 by /64), per-IP and global per-minute limits in one transaction, `chat_enabled` check, temporary daily cap (ADR-050), DynamoDB counter store with a shared contract suite.                                                    |
-| P3-06 | HTTP transport (body hash, streaming parser, per-event schema validation), production wiring with no mocks, sign-in hidden until Phase 4, a CSP-clean production build proven by Playwright, `deploy-web.ts`.                                              |
+| P3-06 | HTTP transport (body hash, streaming parser, per-event schema validation), production wiring with no mocks, sign-in hidden (removed in Phase 4, ADR-051), a CSP-clean production build proven by Playwright, `deploy-web.ts`.                              |
 | P3-07 | `smoke-edge.ts`, the "Deploying application code" runbook, kill-switch and spike notes. Deployment and evidence are owner-run (below).                                                                                                                     |
 
 ## Owner-run steps remaining
@@ -59,7 +59,7 @@ Each step follows [Applying infrastructure](../operations/apply-procedure.md) an
 1. Merge the task pull requests into `phase/3-edge-api-skeleton` in order. Apply `infra/bootstrap` after the first one: the CI plan role needs its new reads before any stack plan can pass.
 2. Apply `infra/stack` (this creates the bucket, distribution, table, function, and alias, with `chat_enabled` still `false`). Expect one iteration if the plan role is missing a read.
 3. Run `deploy-web.ts`, then `smoke-edge.ts` with chat off.
-4. Open one bounded window (`chat_enabled` true), run `smoke-edge.ts --chat-only`, run the kill-switch drill, close the window.
+4. Open one bounded window (`chat_enabled` true), run `smoke-edge.ts` (in Phase 3 it still had a chat mode; Phase 4 replaces it with `--window`), run the kill-switch drill, close the window.
 5. Open the consolidated pull request into `dev`. After the merge, apply and deploy again from `dev`, rehearse the rollback, record the evidence below, tag `phase-3-complete`, and set the Notion phase to Done.
 
 ## Exit checklist
