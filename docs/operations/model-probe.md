@@ -4,18 +4,16 @@ Covers P1-01. Related: R-01, R-02, R-03, ADR-018, ADR-020, ADR-021. All calls ra
 
 ## Results
 
-| Item                     | Result                                                                                                                                                                                       | Status                             |
-| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
-| Titan Text Embeddings v2 | `amazon.titan-embed-text-v2:0` with `dimensions: 512` returned a 512-element vector for a one-word input (2 input tokens).                                                                   | Verified                           |
-| Haiku 4.5, US profile    | `us.anthropic.claude-haiku-4-5-20251001-v1:0` through the Converse API answered once (14 input, 4 output tokens), then failed on every later call.                                           | **Blocked: account action needed** |
-| Gemma 4 26B-A4B          | `google.gemma-4-26b-a4b` on the mantle endpoint answered (40 input, 2 output tokens) using SigV4 with the role's temporary credentials. No API key was used.                                 | Verified                           |
-| S3 Vectors               | Vector bucket and a 512-dimension float32 cosine index created in us-east-1; one vector stored; a filtered query returned it with its metadata at distance 0; everything deleted afterwards. | Verified                           |
+| Item                              | Result                                                                                                                                                                                                   | Status   |
+| --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| Titan Text Embeddings v2          | `amazon.titan-embed-text-v2:0` with `dimensions: 512` returned a 512-element vector for a one-word input (2 input tokens).                                                                               | Verified |
+| Haiku 4.5, US and global profiles | `us.` and `global.anthropic.claude-haiku-4-5-20251001-v1:0` through the Converse API. Ten of ten calls succeeded after the owner submitted the Anthropic use-case form (14 input, 4 output tokens each). | Verified |
+| Gemma 4 26B-A4B                   | `google.gemma-4-26b-a4b` on the mantle endpoint answered (40 input, 2 output tokens) using SigV4 with the role's temporary credentials. No API key was used.                                             | Verified |
+| S3 Vectors                        | Vector bucket and a 512-dimension float32 cosine index created in us-east-1; one vector stored; a filtered query returned it with its metadata at distance 0; everything deleted afterwards.             | Verified |
 
-### Haiku blocker
+### Haiku history
 
-Every call after the first returns `ResourceNotFoundException: Model use case details have not been submitted for this account. Fill out the Anthropic use case details form before using the model.` `get-foundation-model-availability` reports authorization `AUTHORIZED` and entitlement `AVAILABLE`, but agreement status `NOT_AVAILABLE`. The global profile fails the same way. The US profile routes across `us-east-1`, `us-east-2`, and `us-west-2`.
-
-The account owner must submit the Anthropic use-case details in the Bedrock console (Model catalog, Anthropic). That is an attestation only the owner can make. It does not block Phase 1's exit, but Phase 3's Haiku adapter cannot be tested until it is done. Why the first call succeeded is unexplained.
+On the first run Haiku answered once and then failed on every call with `ResourceNotFoundException: Model use case details have not been submitted for this account`. The owner submitted the Anthropic use-case form in the Bedrock console. A second run the same day made ten calls, five on each profile, and all succeeded. `get-foundation-model-availability` still reports agreement status `NOT_AVAILABLE`, so that field is not a reliable signal; only an actual call is. Why the very first call succeeded before the form was submitted is unexplained.
 
 ### Gemma and Titan notes
 
@@ -48,6 +46,6 @@ No billed prices exist yet: Cost Explorer lags by up to a day. The reference pri
 
 ## Risk status
 
-- R-01: Titan and Gemma verified; Haiku blocked by the use-case form.
+- R-01: Titan, Gemma, and Haiku verified by real calls. Billed prices remain to be compared once Cost Explorer has the data (checked again on 2026-10-04 at 08:06 UTC: nothing yet).
 - R-02: verified in us-east-1 for the 512-dimension cosine configuration and the metadata limits above. Price confirmation waits for billing data.
 - R-03: confirmed. One deny policy refused runtime and mantle inference within 13 seconds ([kill-switch.md](kill-switch.md)).

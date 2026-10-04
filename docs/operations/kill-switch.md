@@ -21,22 +21,26 @@ If the native action ever proves unusable: budget notification, then SNS, then a
 
 ## Drill, 2026-10-04
 
-Run with the operator role assuming `portfolio-v2-prod-killswitch-probe`. The probe's credentials were issued **before** the deny policy was attached and reused throughout, to prove the policy affects sessions that already exist. Each poll made one tiny call per model.
+Run twice with the operator role assuming `portfolio-v2-prod-killswitch-probe`. The probe's credentials were issued **before** the deny policy was attached and reused throughout, to prove the policy affects sessions that already exist. Each poll made one tiny call per model, about five seconds apart, so every time below is accurate to roughly five seconds.
 
-| Step               | Observation                                                                                                                                  |
-| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| Baseline           | Titan returned a 512-element vector. Haiku answered once. Gemma answered.                                                                    |
-| Attach deny policy | At +3 s and +8 s Titan and Gemma still succeeded. At **+13 s all three were refused**. Propagation therefore falls between 8 and 13 seconds. |
-| Detach deny policy | Still refused at +3 s and +8 s. At **+13 s Titan and Gemma succeeded again**. Haiku passed authorization (see the caveat below).             |
-| Final state        | No policies attached to the probe role.                                                                                                      |
+**Run 2 (Haiku working), the reference result:**
+
+| Step               | Observation                                                                                      |
+| ------------------ | ------------------------------------------------------------------------------------------------ |
+| Baseline           | Titan, Haiku, and Gemma all succeeded. At +3 s after the attach they still did.                  |
+| Attach deny policy | Gemma refused by **+8 s**. Titan and Haiku refused by **+13 s**. All three refused from then on. |
+| Detach deny policy | All three refused at +3 s and +7 s. All three succeeded again at **+13 s**.                      |
+| Final state        | No policies attached to the probe role.                                                          |
+
+**Run 1 (earlier the same day):** Haiku was failing for an unrelated reason (the Anthropic use-case form had not been submitted), so its restoration could only be inferred from its error changing from AccessDenied to that form error. Titan and Gemma were refused by +13 s and restored at +13 s, matching run 2. One Haiku poll at +170 s was classified as denied and its cause was not captured; it did not recur in run 2.
 
 Execution-role scope, checked with the IAM policy simulator: attach and detach of the deny policy on the probe role are allowed; the same on the operator role or another project's role, attaching any other policy, and creating a role are all implicitly denied. AWS Budgets stores the action as `APPLY_IAM_POLICY`, `AUTOMATIC`, `ACTUAL`, 100 percent, status `STANDBY`, target role the probe role.
 
 ### Caveats
 
-- **Haiku could not be fully exercised.** After its first successful call, Haiku returned `ResourceNotFoundException: Model use case details have not been submitted for this account` on every call. Its denial is proven (it returned AccessDenied at +13 s). Its restoration is shown only indirectly: after the detach its error changed from AccessDenied to the use-case error, so IAM let the request through. One Haiku poll at +170 s was classified as denied and its cause was not captured. See [model-probe.md](model-probe.md).
 - **The automatic trigger has not fired.** Reaching 100 percent needs real spend. Budgets are evaluated only a few times per day and billing data lags by up to a day, so the action can fire well after spend occurs. Spend can exceed the limit before it acts. Real-time quotas remain the primary cost defense; this switch is a backstop.
 - **Gemma's billing service name is unknown** until billed usage exists, so the service budget may not count Gemma spend yet. Recheck after the first billed Gemma usage (P6-03).
+- The drill proves the deny policy and its removal. It does not prove that AWS Budgets itself attaches the policy; that is exercised only when spend reaches the threshold.
 
 ## Recovery
 
