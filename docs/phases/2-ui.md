@@ -43,12 +43,12 @@ Mitigations and evidence live in [Spikes and Risks](https://app.notion.com/p/9f1
 
 ## Exit checklist
 
-- [ ] Exit criteria above met
+- [x] Exit criteria above met locally on desktop and mobile mock builds
 - [ ] Lint, typecheck, formatting, and Vitest green in CI
 - [ ] Terraform fmt/validate/plan and Checkov green, or explicitly not applicable
-- [ ] Phase-specific acceptance, cost, and security checks recorded
-- [ ] Post-deploy smoke passed, or "endpoint smoke not applicable" recorded
-- [ ] No secrets, private contact details, or confidential knowledge committed
+- [x] Phase-specific acceptance, cost, and security checks recorded below (mock traffic incurs no AWS runtime cost)
+- [x] Endpoint smoke not applicable; no Phase 2 deployment
+- [x] No secrets, private contact details, or confidential knowledge committed
 - [ ] ADR and risk changes mirrored in Notion and `docs/`
 - [ ] PR merged into `dev`, tagged `phase-2-complete`, Notion phase set to Done
 
@@ -60,7 +60,7 @@ Mitigations and evidence live in [Spikes and Risks](https://app.notion.com/p/9f1
 - Mobile capture: [mobile.png](../evidence/phase-2/mobile.png)
 - Security/content: typed answer segments are rendered as text; component test confirms model markup never creates an HTML element. Owner profile and mock corpus values remain visibly pending.
 - Deployment/smoke: endpoint smoke not applicable in Phase 2; the UI uses local mock ports only.
-- PR:
+- PR: [#17](https://github.com/sebastian0023/portfolio_RAG/pull/17)
 - Tag: `phase-2-complete`
 - CI run:
 - Deployment/smoke:
