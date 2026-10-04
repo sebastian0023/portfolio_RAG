@@ -21,3 +21,16 @@ output "distribution_id" {
 output "web_bucket" {
   value = module.web.bucket_id
 }
+
+output "api_function_name" {
+  value = module.api.function_name
+}
+
+output "api_alias_name" {
+  value = module.api.alias_name
+}
+
+output "api_function_url" {
+  description = "Direct Function URL; only used by the smoke test to prove unsigned calls are refused."
+  value       = module.api.function_url
+}

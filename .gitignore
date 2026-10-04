@@ -27,3 +27,6 @@ plan.json
 
 # Build artifact of the OAC spike
 infra/spikes/**/handler.zip
+
+# Zip built by the api module from the esbuild bundle
+infra/**/.build/
