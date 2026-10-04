@@ -59,7 +59,7 @@ Each step follows [Applying infrastructure](../operations/apply-procedure.md) an
 1. Merge the task pull requests into `phase/3-edge-api-skeleton` in order. Apply `infra/bootstrap` after the first one: the CI plan role needs its new reads before any stack plan can pass.
 2. Apply `infra/stack` (this creates the bucket, distribution, table, function, and alias, with `chat_enabled` still `false`). Expect one iteration if the plan role is missing a read.
 3. Run `deploy-web.ts`, then `smoke-edge.ts` with chat off.
-4. Open one bounded window (`chat_enabled` true), run `smoke-edge.ts --with-chat`, run the kill-switch drill, close the window.
+4. Open one bounded window (`chat_enabled` true), run `smoke-edge.ts --chat-only`, run the kill-switch drill, close the window.
 5. Open the consolidated pull request into `dev`. After the merge, apply and deploy again from `dev`, rehearse the rollback, record the evidence below, tag `phase-3-complete`, and set the Notion phase to Done.
 
 ## Exit checklist

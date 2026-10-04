@@ -1,6 +1,6 @@
 // Post-deploy smoke test through CloudFront (operator-run). Usage:
 //   node infra/scripts/smoke-edge.ts            edge, refusals, and the race, with chat OFF (costs nothing)
-//   node infra/scripts/smoke-edge.ts --with-chat   also streams one real answer; set chat_enabled=true first
+//   node infra/scripts/smoke-edge.ts --chat-only   just the one streamed answer (set chat_enabled=true first)
 // It reads targets from `terraform output`, prints PASS or FAIL per case with timings, and never prints a
 // request body, a response body, a token, or an address (ADR-028). The race case spends the whole per-IP
 // minute budget, so it waits for a fresh minute first; the one chat message costs under a cent.
@@ -11,7 +11,8 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
-const withChat = process.argv.includes('--with-chat');
+const chatOnly = process.argv.includes('--chat-only');
+const withChat = chatOnly || process.argv.includes('--with-chat');
 
 const outputs = JSON.parse(
   execFileSync('terraform', ['-chdir=infra/stack', 'output', '-json'], {
@@ -77,6 +78,62 @@ const errorCode = async (response: Response): Promise<unknown> => {
     { error?: { code?: string } } | undefined;
   return first?.error?.code;
 };
+
+// One real streamed answer. Chat must be on; it waits for a fresh minute so the per-IP budget is full.
+async function streamOneAnswer(): Promise<void> {
+  const again = 60_000 - (Date.now() % 60_000) + 1500;
+  process.stdout.write(
+    `      waiting ${Math.round(again / 1000)} s for the next minute window\n`,
+  );
+  await new Promise((resolveWait) => setTimeout(resolveWait, again));
+  const started = performance.now();
+  const response = await chat(question('In one sentence, what is TypeScript?'));
+  const reader = response.body?.getReader();
+  const decoder = new TextDecoder();
+  let text = '';
+  let firstByteMs = 0;
+  let firstDeltaMs = 0;
+  for (;;) {
+    const { done, value } = reader
+      ? await reader.read()
+      : { done: true, value: undefined };
+    if (done) break;
+    firstByteMs ||= performance.now() - started;
+    text += decoder.decode(value, { stream: true });
+    if (!firstDeltaMs && text.includes('"type":"delta"'))
+      firstDeltaMs = performance.now() - started;
+  }
+  const totalMs = performance.now() - started;
+  const events = frames(text) as { type?: string; coverage?: string }[];
+  const kinds = events.map((e) => e.type);
+  report(
+    'answer is a 200 SSE stream',
+    response.status === 200 &&
+      (response.headers.get('content-type') ?? '').includes(
+        'text/event-stream',
+      ),
+  );
+  report('first event is accepted', kinds[0] === 'accepted');
+  report(
+    'answer streams deltas and ends with done (no coverage)',
+    kinds.includes('delta') &&
+      kinds.at(-1) === 'done' &&
+      events.at(-1)?.coverage === 'none',
+  );
+  report(
+    'the stream is incremental, not buffered',
+    firstDeltaMs > 0 && firstDeltaMs < totalMs - 100,
+    `first byte ${Math.round(firstByteMs)} ms, first delta ${Math.round(firstDeltaMs)} ms, total ${Math.round(totalMs)} ms`,
+  );
+}
+
+if (chatOnly) {
+  await streamOneAnswer();
+  process.stdout.write(
+    `\n${failures === 0 ? 'all checks passed' : `${failures} check(s) failed`}\n`,
+  );
+  process.exit(failures === 0 ? 0 : 1);
+}
 
 // 1. The SPA and its headers.
 const home = await fetch(`${site}/`);
@@ -244,53 +301,8 @@ process.stdout.write(
   `      info: ${bare} of 12 burst requests got Lambda's bare 429\n`,
 );
 
-// 7. One real streamed answer (chat must be on, and a fresh minute is needed again).
-if (withChat) {
-  const again = 60_000 - (Date.now() % 60_000) + 1500;
-  process.stdout.write(
-    `      waiting ${Math.round(again / 1000)} s for the next minute window\n`,
-  );
-  await new Promise((resolveWait) => setTimeout(resolveWait, again));
-  const started = performance.now();
-  const response = await chat(question('In one sentence, what is TypeScript?'));
-  const reader = response.body?.getReader();
-  const decoder = new TextDecoder();
-  let text = '';
-  let firstByteMs = 0;
-  let firstDeltaMs = 0;
-  for (;;) {
-    const { done, value } = reader
-      ? await reader.read()
-      : { done: true, value: undefined };
-    if (done) break;
-    firstByteMs ||= performance.now() - started;
-    text += decoder.decode(value, { stream: true });
-    if (!firstDeltaMs && text.includes('"type":"delta"'))
-      firstDeltaMs = performance.now() - started;
-  }
-  const totalMs = performance.now() - started;
-  const events = frames(text) as { type?: string; coverage?: string }[];
-  const kinds = events.map((e) => e.type);
-  report(
-    'answer is a 200 SSE stream',
-    response.status === 200 &&
-      (response.headers.get('content-type') ?? '').includes(
-        'text/event-stream',
-      ),
-  );
-  report('first event is accepted', kinds[0] === 'accepted');
-  report(
-    'answer streams deltas and ends with done (no coverage)',
-    kinds.includes('delta') &&
-      kinds.at(-1) === 'done' &&
-      events.at(-1)?.coverage === 'none',
-  );
-  report(
-    'the stream is incremental, not buffered',
-    firstDeltaMs > 0 && firstDeltaMs < totalMs - 100,
-    `first byte ${Math.round(firstByteMs)} ms, first delta ${Math.round(firstDeltaMs)} ms, total ${Math.round(totalMs)} ms`,
-  );
-}
+// 7. One real streamed answer (chat must be on).
+if (withChat) await streamOneAnswer();
 
 process.stdout.write(
   `\n${failures === 0 ? 'all checks passed' : `${failures} check(s) failed`}\n`,

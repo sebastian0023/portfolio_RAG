@@ -51,7 +51,7 @@ The API and the web app are deployed from the **same commit** so the two never d
 1. `npm ci`, then `npm run build -w @portfolio/api`. Print the bundle hash: `shasum -a 256 apps/api/dist/lambda/index.mjs`. It must equal the hash the CI `plan` job printed for the same commit; if it does not, stop (a dependency or toolchain differs).
 2. Plan, guard, and apply the `infra/stack` root as above, in the same working tree with no rebuild in between. The plan shows one new function version and an alias update; any other change is a surprise.
 3. Run `node infra/scripts/deploy-web.ts` (add `--dry-run` first to read the upload list). It refuses a dirty tree, a commit that is not pushed to `origin/dev` or `origin/phase/*`, a bucket outside the `portfolio-v2-` prefix, conflict copies such as `index 2.html`, and an `index.html` with an inline script. It uploads hashed assets first and `index.html` last, writes `version.json` with the commit, and invalidates only `/index.html` and `/version.json`.
-4. Run `node infra/scripts/smoke-edge.ts` (chat off). Add `--with-chat` only inside a window you opened by setting `chat_enabled` to `true`; close the window straight afterwards.
+4. Run `node infra/scripts/smoke-edge.ts` (chat off). Add `--chat-only` only inside a window you opened by setting `chat_enabled` to `true`; close the window straight afterwards.
 5. Record the commit, the bundle hash, the plan counts, and the smoke output.
 
 Keep the checkout out of iCloud or another synced folder for applies and deploys: sync conflict copies end up inside `dist/` and inside the Lambda bundle's inputs.
