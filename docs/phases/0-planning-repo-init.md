@@ -1,6 +1,6 @@
 # Phase 0: Planning + repo init
 
-Status: In progress
+Status: Done
 
 Branch: `main` (owner-approved initialization exception)
 
@@ -41,16 +41,18 @@ Mitigations and evidence live in [Spikes and Risks](https://app.notion.com/p/9f1
 - [x] `npm ci` and `npm run check` pass locally
 - [x] Skeleton committed on `main`; no application implementation or AWS resources
 - [x] No secrets, private contact details, or confidential knowledge committed
-- [ ] Remote visibility and branch protections verified, and actual platform limitations recorded (R-13)
-- [ ] `dev` created from the skeleton commit and set as the default branch
-- [ ] Notion phase and task statuses updated
+- [x] Remote visibility and branch protections verified, and actual platform limitations recorded (R-13)
+- [x] `dev` created from the skeleton commit and set as the default branch
+- [x] Notion phase and task statuses updated
 
 ## Evidence
 
-- Commit:
-- CI run: not applicable (PR checks run on PRs into `dev`)
+- Commit: `202a7b2` (skeleton on `main`); `dev` created from it and set as the default branch
+- CI run: not applicable (PR checks run on PRs into `dev`); first run is this closeout PR
 - Deployment/smoke: not applicable (no AWS resources in Phase 0)
-- Protections and visibility:
+- Visibility: repository set to private on 2026-10-03 (it was public when Phase 0 began)
+- Protections (verified 2026-10-03): `main` and `dev` require a pull request, block force-push and deletion, and apply to admins. `dev` also requires the `typescript`, `terraform-skeleton`, and `checkov-skeleton` checks. A direct push to `main` was rejected with GH006.
+- Platform limitation (R-13): required environment reviewers are public-repository-only on GitHub Free/Pro/Team, so no approval gate can be enforced on this private repository. Required approving reviews are set to 0 because a solo owner cannot approve their own PR. Terraform apply therefore stays a manual, operator-run step until a gate is available (ADR-035).
 - Sign-off:
 
 Sign-off and detailed results are tracked in the [Notion plan](https://app.notion.com/p/3efc9c3293d981c4ab1bcf5e2dad3d55).
