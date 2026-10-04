@@ -39,6 +39,29 @@ On 2026-10-04 GitHub refused to create a `production` environment with a require
 5. **Verify.** `terraform plan` must now report no changes. For behavior changes, run the relevant check (for example the kill-switch drill in [kill-switch.md](kill-switch.md)).
 6. **Record** the commit SHA, the plan summary (counts of add, change, destroy), and the verification result in the pull request or the Notion phase page. Delete `*.tfplan` and `plan.json`; they contain account details and are gitignored.
 
+## Deploying application code (Phase 3)
+
+The API and the web app are deployed from the **same commit** so the two never disagree about the wire format (ADR-035, ADR-049).
+
+| Artifact        | How it ships                                                                                                                                                                                                                                                                       |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| API Lambda code | Through Terraform. `npm run build -w @portfolio/api` writes a deterministic bundle, the `api` module zips it, and `source_code_hash` plus `publish = true` create a new version that the `live` alias points at. It rides the normal plan, guard, and apply, under the state lock. |
+| SPA files       | Through `infra/scripts/deploy-web.ts`, after the apply. Hundreds of content-hashed files would churn every plan, and the CI plan job would need an Angular build, so the files are not Terraform resources.                                                                        |
+
+1. `npm ci`, then `npm run build -w @portfolio/api`. Print the bundle hash: `shasum -a 256 apps/api/dist/lambda/index.mjs`. It must equal the hash the CI `plan` job printed for the same commit; if it does not, stop (a dependency or toolchain differs).
+2. Plan, guard, and apply the `infra/stack` root as above, in the same working tree with no rebuild in between. The plan shows one new function version and an alias update; any other change is a surprise.
+3. Run `node infra/scripts/deploy-web.ts` (add `--dry-run` first to read the upload list). It refuses a dirty tree, a commit that is not pushed to `origin/dev` or `origin/phase/*`, a bucket outside the `portfolio-v2-` prefix, conflict copies such as `index 2.html`, and an `index.html` with an inline script. It uploads hashed assets first and `index.html` last, writes `version.json` with the commit, and invalidates only `/index.html` and `/version.json`.
+4. Run `node infra/scripts/smoke-edge.ts` (chat off). Add `--with-chat` only inside a window you opened by setting `chat_enabled` to `true`; close the window straight afterwards.
+5. Record the commit, the bundle hash, the plan counts, and the smoke output.
+
+Keep the checkout out of iCloud or another synced folder for applies and deploys: sync conflict copies end up inside `dist/` and inside the Lambda bundle's inputs.
+
+### Rolling back
+
+- **API:** re-apply the previous commit (the alias returns to the earlier version). In an emergency, move the alias directly, then follow with a revert pull request so Terraform agrees: `aws lambda update-alias --function-name portfolio-v2-prod-api --name live --function-version <N> --profile portfolio-v2`.
+- **Web:** run `deploy-web.ts` from the previous commit. Old hashed files stay in the bucket, so open tabs keep working.
+- **Stop answering without a rollback:** set `chat_enabled` to `false` ([kill-switch.md](kill-switch.md)).
+
 ## Never
 
 - Use `-target`, `terraform import`, or `terraform state` commands on resources outside this stack, or touch another project's resources (ADR-047).

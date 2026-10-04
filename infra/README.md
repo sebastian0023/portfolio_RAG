@@ -4,12 +4,12 @@ Terraform for the single production stack (ADR-005, ADR-032, ADR-047). Nothing h
 
 ## Layout
 
-| Path                | Purpose                                                                                   |
-| ------------------- | ----------------------------------------------------------------------------------------- |
-| `bootstrap/`        | Root that creates the remote state bucket and the CI plan role. Run once per account.     |
-| `modules/<concern>` | Reusable modules, one per concern (ADR-006). Narrow inputs and outputs, no module cycles. |
-| `stack/`            | The single stack root (added with the SSM and budget modules).                            |
-| `scripts/`          | `check-plan.ts`, the plan guard used locally and in CI.                                   |
+| Path                | Purpose                                                                                    |
+| ------------------- | ------------------------------------------------------------------------------------------ |
+| `bootstrap/`        | Root that creates the remote state bucket and the CI plan role. Run once per account.      |
+| `modules/<concern>` | Reusable modules, one per concern (ADR-006). Narrow inputs and outputs, no module cycles.  |
+| `stack/`            | The single stack root: `ssm`, `budgets`, `web`, `storage`, `api`, and `edge`.              |
+| `scripts/`          | `check-plan.ts` (plan guard), `deploy-web.ts` and `smoke-edge.ts` (operator-run, Phase 3). |
 
 Allowed module names: `bootstrap`, `oidc`, `edge`, `web`, `api`, `auth`, `storage`, `vectors`, `budgets`, `ssm`, `observability`.
 
@@ -69,3 +69,7 @@ terraform fmt -check -recursive infra
 terraform -chdir=infra/bootstrap init -backend=false && terraform -chdir=infra/bootstrap validate
 checkov -d infra --framework terraform
 ```
+
+## Application deploys (Phase 3)
+
+The API bundle is a plan input: `npm run build -w @portfolio/api` must run before `terraform plan` in `infra/stack`, locally and in the CI `plan` job. The SPA is published by `infra/scripts/deploy-web.ts` and checked by `infra/scripts/smoke-edge.ts`. See [Applying infrastructure](../docs/operations/apply-procedure.md).
