@@ -5,13 +5,15 @@ locals {
 
 # The GitHub OIDC provider is shared by other projects in this account (ADR-047).
 # It is read-only here: this module must never create, change, or destroy it.
+# Looked up by ARN rather than URL: a URL lookup lists every provider in the account, which the plan role must not be allowed to do.
 data "aws_iam_openid_connect_provider" "github" {
-  url = "https://${local.oidc_host}"
+  arn = "arn:aws:iam::${var.account_id}:oidc-provider/${local.oidc_host}"
 }
 
 # Plan role: assumable only by pull_request runs of this exact repository (ADR-008).
 # There is deliberately no apply role. CI apply stays disabled until an approval gate is proven (ADR-035, R-13).
 data "aws_iam_policy_document" "plan_trust" {
+  #checkov:skip=CKV_AWS_358:False positive. The check's repository regex does not allow "@", so it cannot parse GitHub's immutable subject form owner@id/repo@id. The value is a single exact repository, not a wildcard, and repository_id and repository_owner_id are also pinned below.
   statement {
     effect  = "Allow"
     actions = ["sts:AssumeRoleWithWebIdentity"]
@@ -30,7 +32,9 @@ data "aws_iam_policy_document" "plan_trust" {
     condition {
       test     = "StringEquals"
       variable = "${local.oidc_host}:sub"
-      values   = ["repo:${local.repo_slug}:pull_request"]
+      # Immutable subject claims (GitHub OIDC customization use_immutable_subject = true) embed the numeric
+      # owner and repository ids. The plain repo:<owner>/<repo> form never matches such a repository.
+      values = ["repo:${var.github_owner}@${var.github_owner_id}/${var.github_repository}@${var.github_repository_id}:pull_request"]
     }
 
     condition {
