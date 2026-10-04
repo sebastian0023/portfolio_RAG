@@ -1,0 +1,368 @@
+<section
+  id="chat"
+  class="chat"
+  tabindex="-1"
+  aria-labelledby="chat-title"
+  data-component="ChatPanel"
+>
+  <header class="chat-head">
+    <div>
+      <p class="eyebrow">PORTFOLIO ASSISTANT</p>
+      <h2 id="chat-title">Ask about [Name]</h2>
+      <p class="subtitle">
+        Explore projects, skills, and experience with cited answers.
+      </p>
+    </div>
+    @if (facade.isSignedIn()) {
+      <button type="button" class="text-btn" (click)="facade.signOut()">
+        Sign out
+      </button>
+    } @else {
+      <button type="button" class="neu-btn" (click)="facade.openSignIn()">
+        Sign in
+      </button>
+    }
+  </header>
+
+  @if (facade.redirecting()) {
+    <p class="inline-alert" role="status">Signing you in…</p>
+  }
+  @if (facade.sessionExpired()) {
+    <div class="inline-alert" role="alert">
+      Your session ended.
+      <button type="button" class="text-btn" (click)="facade.openSignIn()">
+        Sign in again
+      </button>
+    </div>
+  }
+  @if (!facade.chatEnabled()) {
+    <div class="inline-alert" role="status">
+      The assistant is unavailable right now. You can still explore the
+      portfolio links.
+    </div>
+  }
+  @if (limit(); as cap) {
+    <div class="limit" role="status">
+      <h3>{{ cap.title }}</h3>
+      <p>{{ cap.text }}</p>
+      @if (cap.signInCta) {
+        <button type="button" class="neu-btn" (click)="facade.openSignIn()">
+          Sign in for more questions
+        </button>
+      }
+    </div>
+  }
+
+  <div class="conversation" aria-label="Conversation">
+    @if (facade.isEmpty()) {
+      <div class="empty">
+        <div class="empty-mark" aria-hidden="true">✦</div>
+        <h3>What would you like to know?</h3>
+        <p>Ask about [Name]'s background, work, or current interests.</p>
+        <div class="suggestions" aria-label="Suggested questions">
+          @for (
+            question of facade.chatEnabled()
+              ? suggestions
+              : disabledSuggestions;
+            track question
+          ) {
+            <button
+              type="button"
+              class="chip"
+              [disabled]="
+                !facade.chatEnabled() ||
+                facade.busy() ||
+                facade.quota().left === 0 ||
+                facade.siteLimit()
+              "
+              (click)="ask(question)"
+            >
+              {{ question }}
+            </button>
+          }
+        </div>
+      </div>
+    } @else {
+      @for (message of facade.messages(); track message.id) {
+        @if (message.role === 'user') {
+          <div class="message user-message">
+            <p>{{ message.text }}</p>
+            <small>{{ message.time }}</small>
+          </div>
+        } @else {
+          <article
+            class="message assistant-message"
+            [attr.data-status]="message.status"
+          >
+            <p class="eyebrow">ASSISTANT</p>
+            @if (message.status === 'thinking') {
+              <p class="thinking" role="status">Thinking…</p>
+            }
+            @for (block of blocks(message); track $index) {
+              <p [class.list-item]="block.type === 'li'">
+                @for (segment of block.segments; track $index) {
+                  @switch (segment.kind) {
+                    @case ('text') {
+                      {{ segment.text }}
+                    }
+                    @case ('bold') {
+                      <strong>{{ segment.text }}</strong>
+                    }
+                    @case ('code') {
+                      <code>{{ segment.text }}</code>
+                    }
+                    @case ('cite') {
+                      <button
+                        type="button"
+                        class="citation"
+                        [attr.aria-label]="'Open source ' + segment.n"
+                        (click)="
+                          facade.openViewer(
+                            message.id,
+                            sourceIndex(message, segment.n)
+                          )
+                        "
+                      >
+                        [{{ segment.n }}]
+                      </button>
+                    }
+                  }
+                }
+              </p>
+            }
+            @if (message.status === 'streaming') {
+              <span class="cursor" aria-hidden="true"></span>
+            }
+            @if (message.status === 'stopped') {
+              <p class="status">Answer stopped. The partial text is above.</p>
+            }
+            @if (message.status === 'error') {
+              <p class="status error">
+                The answer was interrupted. Try asking again.
+              </p>
+            }
+            @if (message.coverage === 'none') {
+              <div class="related">
+                <p>Try a question about a documented topic:</p>
+                @for (question of related; track question) {
+                  <button
+                    type="button"
+                    class="chip"
+                    [disabled]="
+                      facade.quota().left === 0 || !facade.chatEnabled()
+                    "
+                    (click)="ask(question)"
+                  >
+                    {{ question }}
+                  </button>
+                }
+              </div>
+            }
+            @if (message.sources.length) {
+              <div class="source-list">
+                <p class="eyebrow">SOURCES</p>
+                @for (source of message.sources; track source.n) {
+                  <button
+                    type="button"
+                    class="source"
+                    (click)="facade.openViewer(message.id, $index)"
+                  >
+                    <span>[{{ source.n }}] {{ source.title }}</span
+                    ><small>{{ source.section }}</small>
+                  </button>
+                }
+              </div>
+            }
+          </article>
+        }
+      }
+    }
+  </div>
+
+  @if (facade.check() !== 'idle') {
+    <div
+      class="inline-alert"
+      [attr.role]="facade.check() === 'failed' ? 'alert' : 'status'"
+    >
+      @switch (facade.check()) {
+        @case ('checking') {
+          Checking that you are a person…
+        }
+        @case ('passed') {
+          Check passed. Sending your question…
+        }
+        @case ('failed') {
+          Couldn't verify you.
+          <button type="button" class="text-btn" (click)="facade.retryCheck()">
+            Try again
+          </button>
+        }
+      }
+    </div>
+  }
+  @if (facade.inline(); as alert) {
+    <div class="inline-alert" role="alert">
+      @switch (alert.kind) {
+        @case ('rate') {
+          You're sending questions too quickly. Try again in
+          {{ alert.seconds }} s.
+        }
+        @case ('network') {
+          Couldn't send your question. Check your connection.
+          <button
+            type="button"
+            class="text-btn"
+            (click)="facade.retryNetwork()"
+          >
+            Retry
+          </button>
+        }
+        @case ('too_long') {
+          Your question is too long. Shorten it to 500 characters.
+        }
+      }
+    </div>
+  }
+
+  <form class="composer" (submit)="onSubmit($event)">
+    <label for="chat-input">Your question</label>
+    <textarea
+      id="chat-input"
+      rows="3"
+      [value]="facade.input()"
+      [disabled]="composer().textareaDisabled"
+      [attr.aria-invalid]="composer().overLimit"
+      aria-describedby="composer-help composer-count"
+      placeholder="Ask a question about [Name]…"
+      (input)="onInput($event)"
+      (keydown)="onKeydown($event)"
+    ></textarea>
+    <div class="composer-bottom">
+      <span
+        id="composer-help"
+        [class.warn]="composer().helper.tone !== 'normal'"
+        >{{ composer().helper.text }}</span
+      >
+      <span
+        id="composer-count"
+        [class.warn]="composer().counter.tone !== 'normal'"
+        >{{ composer().counter.text }}</span
+      >
+      <button
+        type="submit"
+        class="neu-btn neu-btn--primary"
+        [disabled]="composer().sendDisabled"
+      >
+        {{ composer().sendMode === 'stop' ? 'Stop' : 'Send' }}
+      </button>
+    </div>
+  </form>
+  <div class="meter" role="status">
+    <span>{{ meter().text }}</span>
+    <div class="meter-track" aria-hidden="true">
+      <span
+        [style.width.%]="meter().percent"
+        [class.warn]="meter().tone !== 'normal'"
+      ></span>
+    </div>
+  </div>
+  <p class="disclaimer">
+    Answers come from reviewed public material. Check the sources for details.
+  </p>
+</section>
+
+@if (facade.viewer(); as view) {
+  <app-modal
+    labelledBy="source-title"
+    [maxWidth]="640"
+    (dismissed)="facade.closeViewer()"
+  >
+    <div class="dialog-head">
+      <div>
+        <p class="eyebrow">SOURCE {{ view.index + 1 }} OF {{ view.total }}</p>
+        <h2 id="source-title">{{ view.source.title }}</h2>
+      </div>
+      <button
+        type="button"
+        class="neu-round"
+        aria-label="Close source"
+        (click)="facade.closeViewer()"
+      >
+        ×
+      </button>
+    </div>
+    <p class="source-meta">
+      {{ view.source.section }} · {{ view.source.updated }}
+    </p>
+    <p class="excerpt">
+      @for (part of excerpt(view.source); track $index) {
+        @if (part.marked) {
+          <mark>{{ part.text }}</mark>
+        } @else {
+          {{ part.text }}
+        }
+      }
+    </p>
+    <p class="source-meta">{{ view.source.path }}</p>
+    @if (view.source.sourceUrl) {
+      <a
+        [href]="view.source.sourceUrl"
+        target="_blank"
+        rel="noopener noreferrer"
+        >Open public source in a new tab</a
+      >
+    }
+    <div class="viewer-nav">
+      <button
+        type="button"
+        class="neu-btn"
+        [disabled]="!view.hasPrev"
+        (click)="facade.moveViewer(-1)"
+      >
+        Previous</button
+      ><button
+        type="button"
+        class="neu-btn"
+        [disabled]="!view.hasNext"
+        (click)="facade.moveViewer(1)"
+      >
+        Next
+      </button>
+    </div>
+  </app-modal>
+}
+@if (facade.dialog() === 'signin') {
+  <app-modal labelledBy="signin-title" (dismissed)="facade.closeDialog()">
+    <div class="dialog-head">
+      <h2 id="signin-title">Sign in for more questions</h2>
+      <button
+        type="button"
+        class="neu-round"
+        aria-label="Close sign in"
+        (click)="facade.closeDialog()"
+      >
+        ×
+      </button>
+    </div>
+    <p>Sign in to ask up to 10 questions a day.</p>
+    <button type="button" class="neu-btn" (click)="facade.chooseProvider('a')">
+      Continue with Provider A
+    </button>
+    <button type="button" class="neu-btn" (click)="facade.chooseProvider('b')">
+      Continue with Provider B
+    </button>
+  </app-modal>
+}
+@for (toast of facade.toasts(); track toast.id) {
+  <div class="toast" role="status">
+    {{ toast.text }}
+    <button
+      type="button"
+      class="text-btn"
+      [attr.aria-label]="'Dismiss: ' + toast.text"
+      (click)="facade.dismissToast(toast.id)"
+    >
+      Dismiss
+    </button>
+  </div>
+}

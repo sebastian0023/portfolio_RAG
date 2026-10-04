@@ -1,16 +1,16 @@
 # Portfolio v2
 
-An AWS serverless portfolio planned around an Angular presentation card and a cited, retrieval-augmented chat. This is a **Phase 0 skeleton** with tooling, shared contracts, CI, and planning documents; no app implementation or AWS resources exist yet.
+An AWS serverless portfolio planned around an Angular presentation card and a cited, retrieval-augmented chat. The Phase 2 UI runs locally with a deterministic mock backend. The real API and deployment belong to later phases.
 
 The [Notion plan](https://app.notion.com/p/3efc9c3293d981c4ab1bcf5e2dad3d55) tracks eight phases, tasks, decisions, risks, and exit evidence. ADR and phase mirrors are in `docs/`.
 
 ## Workspace
 
-`apps/web` will hold the Angular SPA; `apps/api` the Lambda API; `packages/shared` the framework-free ports and types. `infra/` is reserved for Terraform, `knowledge/` for reviewed public RAG source material, and `evals/` for model and security evaluations.
+`apps/web` holds the Angular SPA; `apps/api` will hold the Lambda API; `packages/shared` holds framework-free ports and types. `infra/` contains Terraform foundations, `knowledge/` is reserved for reviewed public RAG material, and `evals/` holds model and security evaluations.
 
 ## Local checks
 
-Use Node 26 and npm 11. Run `npm ci`, then `npm run check` for lint, typecheck, formatting, and Vitest. `npm run test` runs one placeholder test in each workspace. CI also runs Terraform `fmt` and `validate`, a module allowlist, and Checkov over `infra/`. A read-only `plan` job joins once the CI plan role exists (Phase 1).
+Use Node 26 and npm 11. Run `npm ci`, then `npm run check` for lint, typecheck, formatting, and Vitest. Start the mocked app with `npm run start -w @portfolio/web`, or run desktop and mobile browser smoke with `npm run test:e2e -w @portfolio/web` after installing Chromium with `npx playwright install chromium`. Development URLs accept `?scenario=answered` and `?mock=hang` for deterministic states; the production build ignores them. CI also runs Terraform `fmt` and `validate`, a module allowlist, Checkov, and a read-only plan.
 
 ## Git workflow
 

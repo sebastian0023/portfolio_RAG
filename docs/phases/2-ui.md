@@ -1,8 +1,8 @@
 # Phase 2: UI
 
-Status: In progress
+Status: Implementation complete; PR and integration checks in progress
 
-Branch: `phase/2-ui`
+Branch: `p2/card-layout` (consolidated Phase 2 PR into `dev`)
 
 ## Goal
 
@@ -54,6 +54,12 @@ Mitigations and evidence live in [Spikes and Risks](https://app.notion.com/p/9f1
 
 ## Evidence
 
+- Local `npm run check`: passed (111 root Vitest tests, 138 Angular Vitest tests; production build 243.24 kB initial raw size).
+- Local `npm run test:e2e -w @portfolio/web`: 6 passed across desktop Chromium and Pixel 7. Covers send, stream, source viewer, keyboard, stop, unavailable state, quota, responsive layout, and axe accessibility.
+- Desktop capture: [desktop.png](../evidence/phase-2/desktop.png)
+- Mobile capture: [mobile.png](../evidence/phase-2/mobile.png)
+- Security/content: typed answer segments are rendered as text; component test confirms model markup never creates an HTML element. Owner profile and mock corpus values remain visibly pending.
+- Deployment/smoke: endpoint smoke not applicable in Phase 2; the UI uses local mock ports only.
 - PR:
 - Tag: `phase-2-complete`
 - CI run:
