@@ -1,4 +1,5 @@
 import type {
+  GetItemCommand,
   TransactWriteItemsCommand,
   UpdateItemCommand,
 } from '@aws-sdk/client-dynamodb';
@@ -32,12 +33,23 @@ class FakeDynamo {
     return { ok: current < limit, count: current + 1 };
   }
 
-  send = ((command: UpdateItemCommand | TransactWriteItemsCommand) => {
+  send = ((
+    command: UpdateItemCommand | TransactWriteItemsCommand | GetItemCommand,
+  ) => {
     this.commands.push(command);
     if (this.down) {
       return Promise.reject(
         Object.assign(new Error('unavailable'), { name: 'ServiceUnavailable' }),
       );
+    }
+    if ('ConsistentRead' in command.input) {
+      const key =
+        (command.input as GetItemCommand['input']).Key?.['pk']?.S ?? '';
+      const count = this.table.get(key);
+      return Promise.resolve({
+        ...(count === undefined ? {} : { Item: { c: { N: String(count) } } }),
+        $metadata: {},
+      });
     }
     const input = command.input as UpdateItemCommand['input'] &
       TransactWriteItemsCommand['input'];
@@ -148,5 +160,30 @@ describe('dynamodb counter store specifics', () => {
     await expect(
       store.reserve({ key: 'a', limit: 1, expiresAt: 1 }),
     ).rejects.toThrow();
+  });
+
+  test('read is a strongly consistent GetItem of just the count', async () => {
+    const fake = new FakeDynamo();
+    fake.table.set('quota#ip#abc#20261004', 4);
+    const store = new DynamoDbCounterStore(fake, 'counters');
+    expect(await store.read('quota#ip#abc#20261004')).toBe(4);
+    const input = (fake.commands[0] as GetItemCommand).input;
+    expect(input).toMatchObject({
+      TableName: 'counters',
+      Key: { pk: { S: 'quota#ip#abc#20261004' } },
+      ConsistentRead: true,
+      ProjectionExpression: '#c',
+    });
+  });
+
+  test('read refuses an item whose count is not a whole number', async () => {
+    const store = new DynamoDbCounterStore(
+      {
+        send: () =>
+          Promise.resolve({ Item: { c: { N: 'abc' } }, $metadata: {} }),
+      } as unknown as DynamoClientLike,
+      'counters',
+    );
+    await expect(store.read('k')).rejects.toThrow();
   });
 });

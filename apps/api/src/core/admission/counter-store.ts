@@ -18,4 +18,6 @@ export interface CounterStore {
   reserve(item: CounterItem): Promise<ReserveOneResult>;
   // All items are incremented together or none is, so a refused principal never burns shared capacity.
   reserveAll(items: readonly CounterItem[]): Promise<ReserveAllResult>;
+  // Strongly consistent current count; a key that was never written is 0. Used to report what is left.
+  read(key: string): Promise<number>;
 }

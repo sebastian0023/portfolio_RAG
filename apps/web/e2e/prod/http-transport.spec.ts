@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { expect, test, type Page } from '@playwright/test';
+import { PASS, stubGuestCheck } from './support';
 
 // The production bundle with /api/chat stubbed by the browser. These tests prove the real transport: the body
 // hash the edge requires, SSE parsing, and the mapping of refusals to the UI (ADR-049).
@@ -11,9 +12,13 @@ const SSE = {
 const frame = (event: unknown) => `data: ${JSON.stringify(event)}\n\n`;
 const accepted = {
   type: 'accepted',
-  quota: { left: 29, limit: 30, principal: 'guest' },
+  quota: { left: 29, limit: 30 },
 };
 const done = { type: 'done', coverage: 'none', cited: [] };
+
+test.beforeEach(async ({ page }) => {
+  await stubGuestCheck(page);
+});
 
 async function ask(page: Page, question: string): Promise<void> {
   const box = page.getByLabel('Your question');
@@ -45,6 +50,7 @@ test('streams a real answer and sends the body hash the edge requires', async ({
   expect(body).not.toBeNull();
   expect(request.method()).toBe('POST');
   expect(request.headers()['content-type']).toBe('application/json');
+  expect(request.headers()['x-auth-token']).toBe(PASS);
   expect(request.headers()['x-amz-content-sha256']).toBe(
     createHash('sha256')
       .update(body ?? Buffer.alloc(0))
@@ -186,9 +192,111 @@ test('never reads the development query parameters', async ({ page }) => {
   await expect(page.getByLabel('Your question')).toBeEnabled();
 });
 
-test('offers no sign-in control while there is no identity provider', async ({
+test('offers no sign-in or account control anywhere', async ({ page }) => {
+  await page.goto('/');
+  await expect(
+    page.getByRole('heading', { name: 'Ask about [Name]' }),
+  ).toBeVisible();
+  await expect(
+    page.getByText(/sign[- ]?(in|out)|log ?in|account/i),
+  ).toHaveCount(0);
+});
+
+test('checks once, then sends the pass with every question without checking again', async ({
   page,
 }) => {
+  const guest = await stubGuestCheck(page);
+  await page.route('**/api/chat', (route) =>
+    route.fulfill({
+      status: 200,
+      headers: SSE,
+      body:
+        frame(accepted) +
+        frame({ type: 'delta', text: 'Answer.' }) +
+        frame(done),
+    }),
+  );
   await page.goto('/');
-  await expect(page.getByRole('button', { name: /^Sign in/ })).toHaveCount(0);
+  await ask(page, 'First question');
+  await expect(
+    page.locator('.assistant-message[data-status="done"]'),
+  ).toHaveCount(1);
+  expect(guest.requests()).toHaveLength(1);
+  expect(JSON.parse(guest.requests()[0]?.body ?? '{}')).toEqual({
+    token: 'XXXX.DUMMY.TOKEN.XXXX',
+  });
+  expect(guest.requests()[0]?.hash).toBe(
+    createHash('sha256')
+      .update(guest.requests()[0]?.body ?? '')
+      .digest('hex'),
+  );
+
+  const [second] = await Promise.all([
+    page.waitForRequest('**/api/chat'),
+    ask(page, 'Second question'),
+  ]);
+  expect(second.headers()['x-auth-token']).toBe(PASS);
+  await expect(
+    page.locator('.assistant-message[data-status="done"]'),
+  ).toHaveCount(2);
+  expect(guest.requests()).toHaveLength(1);
+  expect(
+    await page.evaluate(
+      () =>
+        (window as unknown as { __turnstileRenders?: number })
+          .__turnstileRenders,
+    ),
+  ).toBe(1);
+});
+
+test('a refused pass asks for the check again, then the question goes through', async ({
+  page,
+}) => {
+  const guest = await stubGuestCheck(page);
+  let chats = 0;
+  await page.route('**/api/chat', (route) => {
+    chats += 1;
+    return chats === 1
+      ? route.fulfill({
+          status: 403,
+          headers: SSE,
+          body: frame({ type: 'error', error: { code: 'guest_check_failed' } }),
+        })
+      : route.fulfill({
+          status: 200,
+          headers: SSE,
+          body:
+            frame(accepted) +
+            frame({ type: 'delta', text: 'Now it works.' }) +
+            frame(done),
+        });
+  });
+  await page.goto('/');
+  await ask(page, 'Will you let me in?');
+  await expect(page.getByText("Couldn't verify you.").first()).toBeVisible();
+  await page.getByRole('button', { name: 'Try again' }).click();
+  await expect(
+    page.locator('.assistant-message[data-status="done"]'),
+  ).toContainText('Now it works.');
+  expect(guest.requests()).toHaveLength(2);
+  expect(chats).toBe(2);
+});
+
+test('when the bot check itself is refused the question is not sent', async ({
+  page,
+}) => {
+  await stubGuestCheck(page, () => ({
+    status: 403,
+    body: { error: 'guest_check_failed' },
+  }));
+  let chats = 0;
+  await page.route('**/api/chat', (route) => {
+    chats += 1;
+    return route.abort();
+  });
+  await page.goto('/');
+  await ask(page, 'Let me in');
+  await expect(page.getByText("Couldn't verify you.").first()).toBeVisible();
+  expect(chats).toBe(0);
+  await expect(page.getByLabel('Your question')).toHaveValue('Let me in');
 });

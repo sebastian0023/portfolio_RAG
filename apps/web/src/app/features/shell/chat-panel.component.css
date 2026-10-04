@@ -274,3 +274,9 @@ mark {
     flex-basis: 80px;
   }
 }
+
+/* Cloudflare shows its challenge here, and only when it needs the visitor (ADR-052). */
+.guest-check-slot {
+  display: flex;
+  justify-content: center;
+}

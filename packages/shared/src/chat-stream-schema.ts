@@ -18,7 +18,6 @@ z.config({ jitless: true });
 const quotaSchema = z.strictObject({
   left: z.number().int().min(0),
   limit: z.number().int().min(1),
-  principal: z.enum(['guest', 'user']),
 });
 
 const sourceSchema = z
@@ -79,3 +78,16 @@ export const chatRequestSchema = z.strictObject({
 type Inferred = z.infer<typeof chatStreamEventSchema>;
 const _assertAssignable = (event: Inferred): ChatStreamEvent => event;
 void _assertAssignable;
+
+// Answer of POST /api/guest-pass (ADR-052). Success carries the pass and when it expires (epoch seconds); a
+// refusal carries a chat error code, so the browser reuses the same wording as for chat refusals.
+export const guestPassResponseSchema = z.union([
+  z.strictObject({
+    pass: z.string().min(1).max(512),
+    expiresAt: z.number().int().min(1),
+  }),
+  z.strictObject({
+    error: z.enum(CHAT_ERROR_CODES),
+    retryAfterSeconds: z.number().int().min(1).exactOptional(),
+  }),
+]);

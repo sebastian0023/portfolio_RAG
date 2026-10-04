@@ -27,8 +27,11 @@ const directives = (csp: string): Map<string, string[]> =>
 describe('edge security headers (P3-06)', () => {
   const spa = directives(headers.spa['content-security-policy'] as string);
 
-  test('scripts load only from this origin and never eval', () => {
-    expect(spa.get('script-src')).toEqual(["'self'"]);
+  // The one remote origin the page may use: Cloudflare Turnstile's widget (ADR-052).
+  const TURNSTILE = 'https://challenges.cloudflare.com';
+
+  test('scripts load only from this origin and Turnstile, and never eval', () => {
+    expect(spa.get('script-src')).toEqual(["'self'", TURNSTILE]);
     for (const [name, values] of spa) {
       expect(values, name).not.toContain("'unsafe-eval'");
     }
@@ -37,6 +40,7 @@ describe('edge security headers (P3-06)', () => {
 
   test('the page can only call its own origin and cannot be framed', () => {
     expect(spa.get('connect-src')).toEqual(["'self'"]);
+    expect(spa.get('frame-src')).toEqual([TURNSTILE]);
     expect(spa.get('frame-ancestors')).toEqual(["'none'"]);
     expect(spa.get('object-src')).toEqual(["'none'"]);
     expect(spa.get('base-uri')).toEqual(["'self'"]);
@@ -44,11 +48,14 @@ describe('edge security headers (P3-06)', () => {
     expect(spa.has('upgrade-insecure-requests')).toBe(true);
   });
 
-  test('no directive allows a remote origin or a wildcard', () => {
+  test('no directive allows a wildcard, and only script-src and frame-src allow the Turnstile origin', () => {
     for (const [name, values] of spa) {
       for (const value of values) {
-        expect(value, name).not.toMatch(/^https?:/);
         expect(value, name).not.toBe('*');
+        if (/^https?:/.test(value)) {
+          expect(['script-src', 'frame-src'], name).toContain(name);
+          expect(value, name).toBe(TURNSTILE);
+        }
       }
     }
   });

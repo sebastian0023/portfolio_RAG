@@ -18,9 +18,9 @@ variable "operator_role_arn" {
 }
 
 variable "bedrock_budget_usd" {
-  description = "Monthly limit across Bedrock service charges. Deliberately counts other projects' model spend too (ADR-047)."
+  description = "Monthly limit across Bedrock service charges. Deliberately counts other projects' model spend too (ADR-047). Sized so the global daily quota at worst-case cost fits (ADR-051)."
   type        = number
-  default     = 10
+  default     = 15
 }
 
 variable "scope_budget_usd" {

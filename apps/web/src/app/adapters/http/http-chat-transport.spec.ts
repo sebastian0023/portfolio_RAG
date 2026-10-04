@@ -10,7 +10,7 @@ const encoder = new TextEncoder();
 const frame = (event: unknown) => `data: ${JSON.stringify(event)}\n\n`;
 const accepted = {
   type: 'accepted',
-  quota: { left: 29, limit: 30, principal: 'guest' },
+  quota: { left: 29, limit: 30 },
 };
 const done = { type: 'done', coverage: 'none', cited: [] };
 
@@ -219,5 +219,47 @@ describe('HttpChatTransport (ADR-049)', () => {
       ),
     );
     expect(events.map((e) => e.type)).toEqual(['accepted']);
+  });
+
+  it('sends the guest pass in X-Auth-Token when there is one, and no header when there is not', async () => {
+    const seen: Record<string, string>[] = [];
+    const fetchImpl = ((_url: string, init: RequestInit) => {
+      seen.push(init.headers as Record<string, string>);
+      return Promise.resolve(sse(stream([encoder.encode(frame(done))])));
+    }) as typeof fetch;
+    await collect(new HttpChatTransport(fetchImpl, () => 'v1.pass.sig'));
+    await collect(new HttpChatTransport(fetchImpl, () => null));
+    await collect(new HttpChatTransport(fetchImpl));
+    expect(seen[0]?.['x-auth-token']).toBe('v1.pass.sig');
+    expect(seen[1]).not.toHaveProperty('x-auth-token');
+    expect(seen[2]).not.toHaveProperty('x-auth-token');
+  });
+
+  it('reads the pass fresh for every question', async () => {
+    let pass = 'first';
+    const seen: string[] = [];
+    const fetchImpl = ((_url: string, init: RequestInit) => {
+      seen.push((init.headers as Record<string, string>)['x-auth-token'] ?? '');
+      return Promise.resolve(sse(stream([encoder.encode(frame(done))])));
+    }) as typeof fetch;
+    const transport = new HttpChatTransport(fetchImpl, () => pass);
+    await collect(transport);
+    pass = 'second';
+    await collect(transport);
+    expect(seen).toEqual(['first', 'second']);
+  });
+
+  it('shows a refused pass as a guest_check_failed event, not a network error', async () => {
+    const body = stream([
+      encoder.encode(
+        frame({ type: 'error', error: { code: 'guest_check_failed' } }),
+      ),
+    ]);
+    const events = await collect(
+      new HttpChatTransport(() => Promise.resolve(sse(body, 403))),
+    );
+    expect(events).toEqual([
+      { type: 'error', error: { code: 'guest_check_failed' } },
+    ]);
   });
 });

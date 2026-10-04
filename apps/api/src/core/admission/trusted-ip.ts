@@ -6,7 +6,9 @@ import { isIP } from 'node:net';
 export const VIEWER_ADDRESS_HEADER = 'cloudfront-viewer-address';
 
 export type ClientKeyResult =
-  { readonly ok: true; readonly key: string } | { readonly ok: false };
+  // `ip` is the viewer's own address, kept only to pass to the bot check (never logged or stored).
+  | { readonly ok: true; readonly key: string; readonly ip: string }
+  | { readonly ok: false };
 
 const PORT = /^[0-9]{1,5}$/;
 
@@ -61,7 +63,7 @@ export function clientKeyFrom(address: string | null): ClientKeyResult {
   if (ip.startsWith('[') && ip.endsWith(']')) ip = ip.slice(1, -1);
 
   const family = isIP(ip);
-  if (family === 4) return { ok: true, key: `v4:${ip}` };
+  if (family === 4) return { ok: true, key: `v4:${ip}`, ip };
   if (family !== 6) return { ok: false };
 
   const groups = ipv6Groups(ip);
@@ -70,13 +72,12 @@ export function clientKeyFrom(address: string | null): ClientKeyResult {
     groups.slice(0, 5).every((g) => g === 0) && groups[5] === 0xffff;
   if (isMappedV4) {
     const [high = 0, low = 0] = groups.slice(6);
-    return {
-      ok: true,
-      key: `v4:${high >> 8}.${high & 255}.${low >> 8}.${low & 255}`,
-    };
+    const v4 = `${high >> 8}.${high & 255}.${low >> 8}.${low & 255}`;
+    return { ok: true, key: `v4:${v4}`, ip: v4 };
   }
   return {
     ok: true,
+    ip,
     key: `v6:${groups
       .slice(0, 4)
       .map((g) => g.toString(16))

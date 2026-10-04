@@ -10,12 +10,7 @@ import type {
   GuestCheckPort,
   GuestCheckResult,
 } from '../ports/guest-check-port';
-import type { SessionInfo, SessionPort } from '../ports/session-port';
-import {
-  CHAT_TRANSPORT,
-  GUEST_CHECK_PORT,
-  SESSION_PORT,
-} from '../ports/tokens';
+import { CHAT_TRANSPORT, GUEST_CHECK_PORT } from '../ports/tokens';
 import { CHAT_SEED } from './chat-seed';
 import type { ChatSeed } from './chat-state';
 import { ChatFacade } from './chat-facade';
@@ -75,67 +70,53 @@ export class ScriptedTransport implements ChatTransport {
   }
 }
 
-export class FakeSession implements SessionPort {
-  signInAvailable = true;
-  info: SessionInfo = { status: 'guest' };
-  nextSignIn: SessionInfo | Error = { status: 'signed-in', displayName: 'Ada' };
-  read(): SessionInfo {
-    return this.info;
-  }
-  async beginSignIn(): Promise<SessionInfo> {
-    if (this.nextSignIn instanceof Error) throw this.nextSignIn;
-    this.info = this.nextSignIn;
-    return this.info;
-  }
-  signOut(): void {
-    this.info = { status: 'guest' };
-  }
-}
-
 export class FakeGuestCheck implements GuestCheckPort {
-  required = true;
+  // Whether a usable pass is held. Tests set it false to model an expired pass.
+  ready = true;
+  invalidations = 0;
   results: GuestCheckResult[] = [];
   calls = 0;
   // Set to hold the check open until the test releases it.
   gate: Promise<void> | null = null;
+  isReady(): boolean {
+    return this.ready;
+  }
+  invalidate(): void {
+    this.invalidations++;
+    this.ready = false;
+  }
   async verify(): Promise<GuestCheckResult> {
     this.calls++;
     await this.gate;
-    return this.results.shift() ?? 'passed';
+    const result = this.results.shift() ?? 'passed';
+    this.ready = result === 'passed';
+    return result;
   }
 }
 
 export interface Harness {
   facade: ChatFacade;
   transport: ScriptedTransport;
-  session: FakeSession;
   guestCheck: FakeGuestCheck;
 }
 
 export function setup(seed: ChatSeed = { verified: true }): Harness {
   const transport = new ScriptedTransport();
-  const session = new FakeSession();
   const guestCheck = new FakeGuestCheck();
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
       { provide: CHAT_TRANSPORT, useValue: transport },
-      { provide: SESSION_PORT, useValue: session },
       { provide: GUEST_CHECK_PORT, useValue: guestCheck },
       { provide: CHAT_SEED, useValue: seed },
     ],
   });
-  return { facade: TestBed.inject(ChatFacade), transport, session, guestCheck };
+  return { facade: TestBed.inject(ChatFacade), transport, guestCheck };
 }
 
-export const quota = (
-  left: number,
-  limit = 3,
-  principal: QuotaState['principal'] = 'guest',
-): QuotaState => ({
+export const quota = (left: number, limit = 10): QuotaState => ({
   left,
   limit,
-  principal,
 });
 
 export const source = (n: number): SourceCitation => ({

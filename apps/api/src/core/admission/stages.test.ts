@@ -14,7 +14,7 @@ import { configFrom, context, rawConfig } from '../../testing/helpers.js';
 import { InMemoryCounterStore } from '../../testing/in-memory-counter-store.js';
 import {
   chatEnabledStage,
-  dailyCapStage,
+  guestQuotaStage,
   preAuthRateStage,
   trustedIpStage,
 } from './stages.js';
@@ -51,8 +51,8 @@ function chain(
     spy('chatEnabled', chatEnabledStage),
     spy('provider', providerStage(registry())),
     spy(
-      'dailyCap',
-      dailyCapStage(store, () => NOW),
+      'guestQuota',
+      guestQuotaStage(store, () => NOW),
     ),
     ...(probe ? [spy('probe', probe)] : []),
   ];
@@ -65,12 +65,12 @@ const viewer = (address = '203.0.113.9:4444') => {
 };
 
 describe('admission stages (ADR-016, ADR-017)', () => {
-  test('admits and reports the site-wide daily remainder as the quota', async () => {
+  test("admits and reports the remainder of the visitor's own quota", async () => {
     const store = new InMemoryCounterStore();
     const { stages } = chain(store);
     const ctx = viewer();
     expect(await runAdmission(stages, ctx)).toBeUndefined();
-    expect(ctx.quota).toEqual({ principal: 'guest', left: 29, limit: 30 });
+    expect(ctx.quota).toEqual({ left: 9, limit: 10 });
     expect(ctx.provider).toBeDefined();
   });
 
@@ -86,7 +86,7 @@ describe('admission stages (ADR-016, ADR-017)', () => {
       'rate',
       'chatEnabled',
       'provider',
-      'dailyCap',
+      'guestQuota',
     ]);
   });
 
@@ -196,7 +196,7 @@ describe('admission stages (ADR-016, ADR-017)', () => {
     );
     expect(await runAdmission(stages, viewer())).toMatchObject({ status: 503 });
     expect(calls).not.toContain('provider');
-    expect(calls).not.toContain('dailyCap');
+    expect(calls).not.toContain('guestQuota');
     expect([...store.counts.keys()].some((k) => k.startsWith('quota#'))).toBe(
       false,
     );
@@ -218,28 +218,101 @@ describe('admission stages (ADR-016, ADR-017)', () => {
     );
   });
 
-  test('the 30th daily message is admitted and the 31st gets site_limit', async () => {
-    const store = new InMemoryCounterStore();
-    const raw = rawConfig({
+  const loose = (extra: Record<string, number> = {}) =>
+    rawConfig({
       limits: JSON.stringify({
         ...JSON.parse(rawConfig()['limits'] as string),
-        preAuthPerIpPerMinute: 100,
-        preAuthGlobalPerMinute: 100,
+        preAuthPerIpPerMinute: 1000,
+        preAuthGlobalPerMinute: 1000,
+        ...extra,
       }),
     });
+
+  test('a visitor gets 10 questions a day: the 10th is admitted with none left, the 11th is quota_exhausted', async () => {
+    const store = new InMemoryCounterStore();
+    const raw = loose();
     let last;
-    for (let i = 1; i <= 30; i += 1) {
+    for (let i = 1; i <= 10; i += 1) {
       const ctx = viewer();
       expect(await runAdmission(chain(store, raw).stages, ctx)).toBeUndefined();
       last = ctx.quota;
     }
-    expect(last).toEqual({ principal: 'guest', left: 0, limit: 30 });
+    expect(last).toEqual({ left: 0, limit: 10 });
     expect(
       await runAdmission(chain(store, raw).stages, viewer()),
-    ).toMatchObject({
-      code: 'site_limit',
-      status: 429,
-    });
+    ).toMatchObject({ code: 'quota_exhausted', status: 429 });
+  });
+
+  test('the count counts down per visitor as questions are admitted', async () => {
+    const store = new InMemoryCounterStore();
+    const lefts: number[] = [];
+    for (let i = 0; i < 3; i += 1) {
+      const ctx = viewer();
+      await runAdmission(chain(store, loose()).stages, ctx);
+      lefts.push(ctx.quota?.left ?? -1);
+    }
+    expect(lefts).toEqual([9, 8, 7]);
+  });
+
+  test("another visitor's quota is untouched when one visitor runs out", async () => {
+    const store = new InMemoryCounterStore();
+    const raw = loose();
+    for (let i = 0; i < 11; i += 1) {
+      await runAdmission(chain(store, raw).stages, viewer());
+    }
+    const other = viewer('198.51.100.5:1');
+    expect(await runAdmission(chain(store, raw).stages, other)).toBeUndefined();
+    expect(other.quota).toEqual({ left: 9, limit: 10 });
+  });
+
+  test('the whole site gets 50 a day: the 51st question from a new visitor is site_limit', async () => {
+    const store = new InMemoryCounterStore();
+    const raw = loose();
+    for (let i = 1; i <= 50; i += 1) {
+      const ctx = viewer(`198.51.${i}.1:1`);
+      expect(await runAdmission(chain(store, raw).stages, ctx)).toBeUndefined();
+    }
+    expect(
+      await runAdmission(chain(store, raw).stages, viewer('198.51.200.1:1')),
+    ).toMatchObject({ code: 'site_limit', status: 429 });
+  });
+
+  test('a visitor who is out of questions does not use up site capacity', async () => {
+    const store = new InMemoryCounterStore();
+    const raw = loose();
+    for (let i = 0; i < 25; i += 1) {
+      await runAdmission(chain(store, raw).stages, viewer());
+    }
+    // Ten were admitted; the other fifteen were refused on the visitor's own limit.
+    const globalKey = [...store.counts.keys()].find((k) =>
+      k.startsWith('quota#global#'),
+    );
+    expect(store.counts.get(globalKey as string)).toBe(10);
+  });
+
+  test('the daily counters reset in the next UTC day, not by TTL', async () => {
+    const store = new InMemoryCounterStore();
+    const ctx1 = viewer();
+    const stage = guestQuotaStage(store, () => NOW);
+    const next = guestQuotaStage(store, () => NOW + 86_400_000);
+    const prep = chain(store, loose()).stages.slice(0, 5);
+    await runAdmission(prep, ctx1);
+    expect(await stage(ctx1)).toBeUndefined();
+    expect(ctx1.quota).toEqual({ left: 9, limit: 10 });
+    const ctx2 = viewer();
+    await runAdmission(prep, ctx2);
+    expect(await next(ctx2)).toBeUndefined();
+    expect(ctx2.quota).toEqual({ left: 9, limit: 10 });
+  });
+
+  test('the visitor key holds a hash, never the address', async () => {
+    const store = new InMemoryCounterStore();
+    await runAdmission(
+      chain(store, loose()).stages,
+      viewer('203.0.113.9:4444'),
+    );
+    for (const key of store.counts.keys())
+      expect(key).not.toContain('203.0.113.9');
   });
 
   test('a counter store failure refuses and never admits (fail closed)', async () => {
@@ -253,14 +326,16 @@ describe('admission stages (ADR-016, ADR-017)', () => {
     expect(calls).not.toContain('chatEnabled');
   });
 
-  test('a daily-cap store failure after the rate check also refuses', async () => {
+  test('a failure reading the count back refuses, and the reservation stays counted', async () => {
     const store = new InMemoryCounterStore();
-    const original = store.reserve.bind(store);
-    store.reserve = () => Promise.reject(new Error('down'));
+    store.read = () => Promise.reject(new Error('down'));
     expect(await runAdmission(chain(store).stages, viewer())).toMatchObject({
       status: 503,
+      code: 'unavailable',
     });
-    store.reserve = original;
+    expect(
+      [...store.counts.keys()].some((k) => k.startsWith('quota#ip#')),
+    ).toBe(true);
   });
 
   test('a request refused before the rate stage reserves nothing', async () => {

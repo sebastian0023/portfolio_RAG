@@ -20,7 +20,7 @@ const source = {
 describe('chat stream contract (ADR-048)', () => {
   test('accepts every event kind', () => {
     const events = [
-      { type: 'accepted', quota: { left: 2, limit: 3, principal: 'guest' } },
+      { type: 'accepted', quota: { left: 2, limit: 3 } },
       { type: 'sources', sources: [source] },
       { type: 'delta', text: 'Hello [1]' },
       { type: 'done', coverage: 'answered', cited: [1] },

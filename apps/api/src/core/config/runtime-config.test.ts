@@ -15,10 +15,9 @@ const validLimits = {
   outputMaxTokens: 400,
   timeoutSeconds: 30,
   preAuthPerIpPerMinute: 10,
-  preAuthGlobalPerMinute: 60,
-  guestPerIpPerDay: 3,
-  userPerDay: 10,
-  globalPerDay: 30,
+  preAuthGlobalPerMinute: 40,
+  guestPerIpPerDay: 10,
+  globalPerDay: 50,
 };
 
 const valid = {
@@ -149,7 +148,8 @@ describe('parseRuntimeConfig', () => {
   test.each([
     ['unknown key', { ...validLimits, extra: 1 }],
     ['zero', { ...validLimits, globalPerDay: 0 }],
-    ['negative', { ...validLimits, userPerDay: -1 }],
+    ['negative', { ...validLimits, guestPerIpPerDay: -1 }],
+    ['a retired per-user limit', { ...validLimits, userPerDay: 10 }],
     ['fraction', { ...validLimits, historyTurns: 1.5 }],
     ['string number', { ...validLimits, outputMaxTokens: '400' }],
     ['over the upper bound', { ...validLimits, outputMaxTokens: 100_000 }],
@@ -171,7 +171,7 @@ describe('parseRuntimeConfig', () => {
       }),
       limits: JSON.stringify({
         ...validLimits,
-        userPerDay: secret,
+        guestPerIpPerDay: secret,
         [secret]: 1,
       }),
     });

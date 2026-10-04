@@ -30,4 +30,9 @@ export class InMemoryCounterStore implements CounterStore {
     }
     return Promise.resolve({ ok: true });
   }
+
+  read(key: string): Promise<number> {
+    if (this.failWith) return Promise.reject(this.failWith);
+    return Promise.resolve(this.counts.get(key) ?? 0);
+  }
 }

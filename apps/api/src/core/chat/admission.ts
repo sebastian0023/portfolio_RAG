@@ -28,6 +28,10 @@ export interface AdmissionContext {
   quota?: QuotaState;
   // Bucket key of the viewer (IPv4 address or IPv6 /64) from the trusted edge header.
   clientKey?: string;
+  // The viewer's own address, only for the bot check. Never logged or stored.
+  viewerIp?: string;
+  // The Turnstile token of a POST /api/guest-pass request.
+  guestToken?: string;
 }
 
 export type AdmissionStage = (

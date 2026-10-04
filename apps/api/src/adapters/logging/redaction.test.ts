@@ -10,6 +10,7 @@ import type { ChatService } from '../../core/chat/chat-handler.js';
 import {
   configFrom,
   wiringStage,
+  refusingGuestPass,
   context,
   rawConfig,
 } from '../../testing/helpers.js';
@@ -30,7 +31,7 @@ describe('log redaction (ADR-028)', () => {
         void input.request.question;
         yield {
           type: 'accepted',
-          quota: { left: 1, limit: 30, principal: 'guest' },
+          quota: { left: 1, limit: 30 },
         };
         yield { type: 'delta', text: CANARY_ANSWER };
         yield { type: 'done', coverage: 'none', cited: [] };
@@ -48,7 +49,11 @@ describe('log redaction (ADR-028)', () => {
       logger,
     });
     const handler = createStreamHandler({
-      app: createHttpApp({ handleChat, newRequestId: () => 'req' }),
+      app: createHttpApp({
+        handleChat,
+        handleGuestPass: refusingGuestPass,
+        newRequestId: () => 'req',
+      }),
       httpResponseStream: { from: (stream) => stream },
       logger,
       newRequestId: () => 'req',

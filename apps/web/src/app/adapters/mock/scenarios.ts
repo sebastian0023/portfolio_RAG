@@ -11,7 +11,6 @@ import type {
   ChatMessage,
   ChatSeed,
 } from '../../core/chat/chat-state';
-import type { SessionInfo } from '../../core/ports/session-port';
 import {
   answerFor,
   citedIn,
@@ -39,14 +38,9 @@ export const SCENARIO_IDS = [
   'checkFailed',
   'oneLeft',
   'outGuest',
-  'outSigned',
   'siteLimit',
   'rateLimit',
   'unavailable',
-  'signIn',
-  'redirecting',
-  'signedIn',
-  'session',
   'network',
   'tooLong',
   'nearLimit',
@@ -63,7 +57,6 @@ export function isScenarioId(value: string | null): value is ScenarioId {
 
 export interface Scenario {
   readonly seed: ChatSeed;
-  readonly session: SessionInfo;
   readonly config: Partial<MockConfig>;
 }
 
@@ -128,18 +121,16 @@ class Builder {
   }
 }
 
+// The guest limit mirrors GUEST_LIMIT (ADR-051).
 const guest = (left: number) => ({
   left,
-  limit: 3,
-  principal: 'guest' as const,
+  limit: 10,
 });
-const signedIn: SessionInfo = { status: 'signed-in', displayName: '[name]' };
 
 export function buildScenario(id: ScenarioId): Scenario {
   const b = new Builder();
   const answered = (): ChatMessage[] => b.finished(Q_STUDYING, '10:41 AM');
   let seed: ChatSeed = {};
-  let session: SessionInfo = { status: 'guest' };
 
   switch (id) {
     case 'live':
@@ -224,14 +215,6 @@ export function buildScenario(id: ScenarioId): Scenario {
         verified: true,
       };
       break;
-    case 'outSigned':
-      session = signedIn;
-      seed = {
-        messages: [...answered(), ...b.finished(Q_INTERNSHIPS, '10:46 AM')],
-        quota: { left: 0, limit: 10, principal: 'user' },
-        session,
-      };
-      break;
     case 'siteLimit':
       seed = {
         messages: answered(),
@@ -252,27 +235,8 @@ export function buildScenario(id: ScenarioId): Scenario {
     case 'unavailable':
       seed = { chatEnabled: false };
       break;
-    case 'signIn':
-      seed = { dialog: 'signin' };
-      break;
     case 'how':
       seed = { dialog: 'how' };
-      break;
-    case 'redirecting':
-      seed = { redirecting: true };
-      break;
-    case 'signedIn':
-      session = signedIn;
-      seed = {
-        messages: answered(),
-        quota: { left: 9, limit: 10, principal: 'user' },
-        session,
-        toasts: [{ id: 9001, kind: 'success', text: 'Signed in as [name]' }],
-      };
-      break;
-    case 'session':
-      session = { status: 'expired' };
-      seed = { messages: answered(), quota: guest(2), verified: true, session };
       break;
     case 'network':
       seed = {
@@ -304,13 +268,9 @@ export function buildScenario(id: ScenarioId): Scenario {
 
   const quota = seed.quota;
   const config: Partial<MockConfig> = {
-    ...(quota?.principal === 'user'
-      ? { userLeft: quota.left }
-      : quota
-        ? { guestLeft: quota.left }
-        : {}),
+    ...(quota ? { guestLeft: quota.left } : {}),
     ...(seed.chatEnabled === false ? { enabled: false } : {}),
     ...(seed.siteLimit ? { siteLimited: true } : {}),
   };
-  return { seed: { session, ...seed }, session, config };
+  return { seed, config };
 }

@@ -18,6 +18,7 @@ import {
   cacheControlFor,
   findConflictCopies,
   hasInlineScript,
+  hasTurnstileSiteKey,
   isDeployableBranchList,
   uploadOrder,
 } from './deploy-web-lib.ts';
@@ -63,6 +64,20 @@ const outputs = JSON.parse(
 ) as Record<string, { value: unknown } | undefined>;
 const bucket = assertOwnedBucket(outputs['web_bucket']?.value);
 const distributionId = assertDistributionId(outputs['distribution_id']?.value);
+
+// The bot check cannot pass without the site's public Turnstile key, so refuse to publish a build without it.
+if (
+  !hasTurnstileSiteKey(
+    readFileSync(
+      join(repoRoot, 'apps/web/src/environments/environment.ts'),
+      'utf8',
+    ),
+  )
+) {
+  fail(
+    'turnstileSiteKey is empty in apps/web/src/environments/environment.ts (ADR-052)',
+  );
+}
 
 // 3. Always build into an empty directory from this commit.
 rmSync(join(repoRoot, 'apps/web/dist'), { recursive: true, force: true });

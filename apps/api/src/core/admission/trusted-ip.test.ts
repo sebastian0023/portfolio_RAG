@@ -3,33 +3,57 @@ import { clientKeyFrom } from './trusted-ip.js';
 
 describe('trusted viewer address (ADR-016, R-15)', () => {
   test('keys an IPv4 viewer by its address', () => {
-    expect(clientKeyFrom('203.0.113.9:46532')).toEqual({
+    expect(clientKeyFrom('203.0.113.9:46532')).toMatchObject({
       ok: true,
       key: 'v4:203.0.113.9',
     });
   });
 
+  test('hands back the raw viewer address only for the bot check', () => {
+    expect(clientKeyFrom('203.0.113.9:46532')).toMatchObject({
+      ip: '203.0.113.9',
+    });
+    expect(clientKeyFrom('[2001:db8:85a3::8a2e:370:7334]:46532')).toMatchObject(
+      {
+        ip: '2001:db8:85a3::8a2e:370:7334',
+      },
+    );
+    expect(clientKeyFrom('::ffff:203.0.113.9:5000')).toMatchObject({
+      ip: '203.0.113.9',
+    });
+  });
+
   test('keys an IPv6 viewer by its /64, with and without brackets', () => {
     const key = { ok: true, key: 'v6:2001:db8:85a3:0' };
-    expect(clientKeyFrom('2001:db8:85a3:0:0:8a2e:370:7334:46532')).toEqual(key);
-    expect(clientKeyFrom('[2001:db8:85a3::8a2e:370:7334]:46532')).toEqual(key);
-    expect(clientKeyFrom('2001:db8:85a3:0:ffff:ffff:ffff:ffff:1')).toEqual(key);
+    expect(
+      clientKeyFrom('2001:db8:85a3:0:0:8a2e:370:7334:46532'),
+    ).toMatchObject(key);
+    expect(clientKeyFrom('[2001:db8:85a3::8a2e:370:7334]:46532')).toMatchObject(
+      key,
+    );
+    expect(
+      clientKeyFrom('2001:db8:85a3:0:ffff:ffff:ffff:ffff:1'),
+    ).toMatchObject(key);
   });
 
   test('two hosts in one /64 share a bucket; another /64 does not', () => {
     const a = clientKeyFrom('2001:db8:1:1::1:5000');
     const b = clientKeyFrom('2001:db8:1:1:aaaa::2:5000');
     const c = clientKeyFrom('2001:db8:1:2::1:5000');
-    expect(a).toEqual(b);
-    expect(a).not.toEqual(c);
+    expect(a).toMatchObject({ ok: true });
+    expect(a.ok && b.ok && a.key === b.key).toBe(true);
+    expect(a.ok && c.ok && a.key === c.key).toBe(false);
   });
 
   test('expands a compressed address that starts with ::', () => {
-    expect(clientKeyFrom('::1:5000')).toEqual({ ok: true, key: 'v6:0:0:0:0' });
+    expect(clientKeyFrom('::1:5000')).toMatchObject({
+      ok: true,
+      key: 'v6:0:0:0:0',
+    });
   });
 
   test('treats an IPv4-mapped IPv6 address as that IPv4 address', () => {
-    expect(clientKeyFrom('::ffff:203.0.113.9:5000')).toEqual({
+    expect(clientKeyFrom('::ffff:203.0.113.9:5000')).toMatchObject({
       ok: true,
       key: 'v4:203.0.113.9',
     });

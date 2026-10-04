@@ -10,16 +10,18 @@ import type { ChatService } from '../../core/chat/chat-handler.js';
 import {
   configFrom,
   wiringStage,
+  refusingGuestPass,
   memoryLogger,
   rawConfig,
 } from '../../testing/helpers.js';
+import type { GuestPassHandler } from '../../core/guest/guest-pass-handler.js';
 import { createHttpApp } from './app.js';
 
 const answering: ChatService = {
   async *stream() {
     yield {
       type: 'accepted',
-      quota: { left: 29, limit: 30, principal: 'guest' },
+      quota: { left: 29, limit: 30 },
     };
     yield { type: 'delta', text: 'hello' };
     yield { type: 'done', coverage: 'none', cited: [] };
@@ -38,7 +40,11 @@ function app(service: ChatService = answering, raw = rawConfig()) {
     service,
     logger: memoryLogger(),
   });
-  return createHttpApp({ handleChat, newRequestId: () => 'req' });
+  return createHttpApp({
+    handleChat,
+    handleGuestPass: refusingGuestPass,
+    newRequestId: () => 'req',
+  });
 }
 
 const post = (body: string | null, headers: Record<string, string> = {}) =>
@@ -62,7 +68,7 @@ describe('HTTP app status table (ADR-049)', () => {
     const text = await response.text();
     expect(text).toBe(
       [
-        'data: {"type":"accepted","quota":{"left":29,"limit":30,"principal":"guest"}}',
+        'data: {"type":"accepted","quota":{"left":29,"limit":30}}',
         'data: {"type":"delta","text":"hello"}',
         'data: {"type":"done","coverage":"none","cited":[]}',
       ]
@@ -161,7 +167,7 @@ describe('HTTP app status table (ADR-049)', () => {
       async *stream() {
         yield {
           type: 'accepted',
-          quota: { left: 1, limit: 30, principal: 'guest' },
+          quota: { left: 1, limit: 30 },
         };
         await Promise.resolve();
         throw new Error('secret provider detail');
@@ -175,10 +181,119 @@ describe('HTTP app status table (ADR-049)', () => {
   test('a handler that throws yields a sanitized 503', async () => {
     const boom = createHttpApp({
       handleChat: () => Promise.reject(new Error('internal detail')),
+      handleGuestPass: refusingGuestPass,
       newRequestId: () => 'r',
     });
     const response = await boom.fetch(post(valid));
     expect(response.status).toBe(503);
     expect(await response.text()).not.toContain('internal');
+  });
+});
+
+describe('guest pass route (ADR-052)', () => {
+  const issuing: GuestPassHandler = () =>
+    Promise.resolve({
+      status: 200,
+      body: { pass: 'v1.a.b', expiresAt: 1_900_000_000 },
+    });
+
+  function guestApp(handleGuestPass: GuestPassHandler) {
+    return createHttpApp({
+      handleChat: createChatHandler({
+        stages: [],
+        service: answering,
+        logger: memoryLogger(),
+      }),
+      handleGuestPass,
+      newRequestId: () => 'req',
+    });
+  }
+
+  const postPass = (body = '{"token":"t"}') =>
+    new Request('https://example.test/api/guest-pass', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body,
+    });
+
+  test('answers JSON that is never cached or sniffed', async () => {
+    const response = await guestApp(issuing).fetch(postPass());
+    expect(response.status).toBe(200);
+    expect(response.headers.get('content-type')).toBe(
+      'application/json; charset=utf-8',
+    );
+    expect(response.headers.get('cache-control')).toBe('no-store');
+    expect(response.headers.get('x-content-type-options')).toBe('nosniff');
+    expect(await response.json()).toEqual({
+      pass: 'v1.a.b',
+      expiresAt: 1_900_000_000,
+    });
+  });
+
+  test('passes refusals through with their status and Retry-After', async () => {
+    const limited = guestApp(() =>
+      Promise.resolve({
+        status: 429,
+        retryAfterSeconds: 12,
+        body: { error: 'rate_limited', retryAfterSeconds: 12 },
+      }),
+    );
+    const response = await limited.fetch(postPass());
+    expect(response.status).toBe(429);
+    expect(response.headers.get('retry-after')).toBe('12');
+    expect(await response.json()).toEqual({
+      error: 'rate_limited',
+      retryAfterSeconds: 12,
+    });
+  });
+
+  test('hands the request body and the headers to the handler', async () => {
+    let seen: { contentType: string | null; header: string | null } | undefined;
+    const app = guestApp((ctx) => {
+      seen = {
+        contentType: ctx.contentType,
+        header: ctx.headers.get('cloudfront-viewer-address'),
+      };
+      return Promise.resolve({
+        status: 200,
+        body: { pass: 'p', expiresAt: 1 },
+      });
+    });
+    await app.fetch(
+      new Request('https://example.test/api/guest-pass', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'cloudfront-viewer-address': '203.0.113.9:1',
+        },
+        body: '{}',
+      }),
+    );
+    expect(seen).toEqual({
+      contentType: 'application/json',
+      header: '203.0.113.9:1',
+    });
+  });
+
+  test('refuses every other method, including OPTIONS, without CORS headers', async () => {
+    for (const method of ['GET', 'OPTIONS', 'PUT']) {
+      const response = await guestApp(issuing).fetch(
+        new Request('https://example.test/api/guest-pass', {
+          method,
+          headers: { origin: 'https://evil.example' },
+        }),
+      );
+      expect(response.status).toBe(405);
+      for (const [name] of response.headers)
+        expect(name.startsWith('access-control-')).toBe(false);
+    }
+  });
+
+  test('a handler that throws yields a sanitized 503', async () => {
+    const response = await guestApp(() =>
+      Promise.reject(new Error('turnstile secret abc')),
+    ).fetch(postPass());
+    expect(response.status).toBe(503);
+    expect(await response.text()).not.toContain('secret');
   });
 });

@@ -5,6 +5,7 @@ import {
   cacheControlFor,
   findConflictCopies,
   hasInlineScript,
+  hasTurnstileSiteKey,
   isDeployableBranchList,
   isHashedAsset,
   uploadOrder,
@@ -119,5 +120,19 @@ describe('deploy-web decisions (P3-06)', () => {
     expect(isDeployableBranchList(['  origin/p3/web-http'])).toBe(false);
     expect(isDeployableBranchList([''])).toBe(false);
     expect(isDeployableBranchList(['  origin/main'])).toBe(false);
+  });
+
+  test('requires a real Turnstile sitekey in the production environment', () => {
+    expect(
+      hasTurnstileSiteKey("  turnstileSiteKey: '0x4AAAAAAABkMYinukE8nzYS',"),
+    ).toBe(true);
+    for (const source of [
+      "turnstileSiteKey: '',",
+      "turnstileSiteKey: '1x00000000000000000000BB',",
+      "turnstileSiteKey: '0x4',",
+      'nothing here',
+    ]) {
+      expect(hasTurnstileSiteKey(source), source).toBe(false);
+    }
   });
 });

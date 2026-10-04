@@ -1,8 +1,7 @@
 import type { QuotaState, SourceCitation } from '@portfolio/shared';
-import type { SessionInfo } from '../ports/session-port';
 
-export const GUEST_LIMIT = 3;
-export const SIGNED_IN_LIMIT = 10;
+// Guests get 10 questions per IP per day (ADR-051). The server's `accepted` event carries the real count.
+export const GUEST_LIMIT = 10;
 
 export type AssistantStatus =
   'thinking' | 'streaming' | 'done' | 'stopped' | 'error';
@@ -44,7 +43,7 @@ export type InlineAlert =
   | { readonly kind: 'network' }
   | { readonly kind: 'too_long' };
 
-export type DialogKind = 'signin' | 'how';
+export type DialogKind = 'how';
 
 export interface ViewerRef {
   readonly messageId: number;
@@ -64,14 +63,12 @@ export interface Toast {
 export interface ChatSeed {
   readonly messages?: readonly ChatMessage[];
   readonly quota?: QuotaState;
-  readonly session?: SessionInfo;
   readonly verified?: boolean;
   readonly check?: CheckState;
   readonly input?: string;
   readonly inline?: InlineAlert | null;
   readonly dialog?: DialogKind | null;
   readonly viewer?: ViewerRef | null;
-  readonly redirecting?: boolean;
   readonly chatEnabled?: boolean;
   readonly siteLimit?: boolean;
   readonly toasts?: readonly Toast[];
