@@ -94,14 +94,16 @@ data "aws_cloudfront_cache_policy" "disabled" {
   name = "Managed-CachingDisabled"
 }
 
+# Only the custom token is forwarded. CloudFront rejects x-amz-content-sha256 in an origin request policy
+# ("not allowed"): the viewer sends that header to CloudFront, which uses it when signing the origin request.
 resource "aws_cloudfront_origin_request_policy" "forward" {
-  name = "${local.prefix}-forward-auth-and-hash"
+  name = "${local.prefix}-forward-auth-token"
 
   headers_config {
     header_behavior = "whitelist"
 
     headers {
-      items = ["X-Auth-Token", "x-amz-content-sha256"]
+      items = ["X-Auth-Token"]
     }
   }
 
