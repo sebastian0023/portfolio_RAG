@@ -7,3 +7,5 @@ The [Notion plan](https://app.notion.com/p/3efc9c3293d981c4ab1bcf5e2dad3d55) is 
 - [Toolchain and compatibility matrix](operations/toolchain.md): pinned Node, TypeScript, Vitest, and Angular versions with evidence (P1-03, R-07).
 - [Initial abuse budgets](operations/abuse-budgets.md): provisional request limits, quotas, reservation semantics, and fail-closed rules (P1-13).
 - [AWS and GitHub access](operations/access.md): audit findings, MFA-gated operator role setup, and the deployment-gate limitation (P1-02).
+- [Budget kill switch](operations/kill-switch.md): design, drill results with timings, caveats, and recovery steps (P1-08, P1-09).
+- [Model and vector-store verification](operations/model-probe.md): probe results, the Haiku blocker, S3 Vectors limits, and shared quotas (P1-01).
