@@ -9,6 +9,8 @@ import { createBedrockConverseProvider } from './adapters/bedrock/bedrock-conver
 import { createHttpApp } from './adapters/http/app.js';
 import { createStreamHandler } from './adapters/lambda/stream-handler.js';
 import { DynamoDbCounterStore } from './adapters/dynamodb/dynamodb-counter-store.js';
+import { SsmSecretSource } from './adapters/ssm/ssm-secret-source.js';
+import { createSiteverifyClient } from './adapters/turnstile/siteverify-client.js';
 import { createJsonLogger } from './adapters/logging/json-logger.js';
 import { SsmConfigSource } from './adapters/ssm/ssm-config-source.js';
 import {
@@ -20,6 +22,7 @@ import {
 } from './core/chat/admission.js';
 import {
   chatEnabledStage,
+  guestPassStage,
   guestQuotaStage,
   preAuthRateStage,
   trustedIpStage,
@@ -27,6 +30,11 @@ import {
 import { createChatHandler } from './core/chat/chat-handler.js';
 import { createPlainChatService } from './core/chat/plain-chat-service.js';
 import { CachedConfig } from './core/config/cached-config.js';
+import {
+  createGuestPassHandler,
+  guestTokenStage,
+} from './core/guest/guest-pass-handler.js';
+import { CachedSecrets } from './core/guest/secrets.js';
 import { ProviderRegistry } from './core/llm/provider-registry.js';
 
 const environmentSchema = z.object({
@@ -63,6 +71,15 @@ const counters = new DynamoDbCounterStore(
   env.COUNTERS_TABLE,
 );
 
+// The guest check (ADR-052): the Turnstile token is verified server-side and traded for a signed pass.
+// A secret that is missing, unreadable, or still the placeholder refuses the request (fail closed).
+const secrets = new CachedSecrets(
+  new SsmSecretSource(
+    new SSMClient({ region: env.AWS_REGION }),
+    env.PARAMETER_PREFIX,
+  ),
+);
+
 // Cheapest first, nothing paid before the last stage (ADR-016, ADR-039). The rate limit runs before the
 // chat_enabled check so it needs no model; every paid step still sits behind chat_enabled.
 const handleChat = createChatHandler({
@@ -74,6 +91,7 @@ const handleChat = createChatHandler({
     trustedIpStage,
     preAuthRateStage(counters),
     chatEnabledStage,
+    guestPassStage(secrets),
     providerStage(registry),
     guestQuotaStage(counters),
   ],
@@ -81,9 +99,28 @@ const handleChat = createChatHandler({
   logger,
 });
 
+const handleGuestPass = createGuestPassHandler({
+  stages: [
+    contentTypeStage,
+    byteCapStage,
+    guestTokenStage,
+    configStage(config),
+    trustedIpStage,
+    preAuthRateStage(counters),
+    chatEnabledStage,
+  ],
+  secrets,
+  verifier: createSiteverifyClient(),
+  logger,
+});
+
 export const handler = awslambda.streamifyResponse(
   createStreamHandler({
-    app: createHttpApp({ handleChat, newRequestId: randomUUID }),
+    app: createHttpApp({
+      handleChat,
+      handleGuestPass,
+      newRequestId: randomUUID,
+    }),
     httpResponseStream: awslambda.HttpResponseStream,
     logger,
     newRequestId: randomUUID,

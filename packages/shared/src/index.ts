@@ -15,8 +15,10 @@ export type {
   Citation,
 } from './index-repository.js';
 export {
+  AUTH_HEADER,
   CHAT_API_PATH,
   CHAT_ERROR_CODES,
+  GUEST_PASS_PATH,
   MAX_EXCERPT_CHARS,
   MAX_HISTORY_TURNS,
   MAX_QUESTION_LENGTH,

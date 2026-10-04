@@ -1,10 +1,14 @@
+import { AUTH_HEADER } from '@portfolio/shared';
 import type { AdmissionStage } from '../chat/admission.js';
 import { reject } from '../chat/rejection.js';
+import { verifyPass } from '../guest/guest-pass.js';
+import type { CachedSecrets } from '../guest/secrets.js';
 import type { CounterStore } from './counter-store.js';
 import { clientKeyFrom, VIEWER_ADDRESS_HEADER } from './trusted-ip.js';
 import {
   dayWindow,
   expiresAtSeconds,
+  fingerprint,
   globalDayKey,
   ipDayKey,
   globalMinuteKey,
@@ -19,6 +23,7 @@ export const trustedIpStage: AdmissionStage = (ctx) => {
   const result = clientKeyFrom(ctx.headers.get(VIEWER_ADDRESS_HEADER));
   if (!result.ok) return Promise.resolve(reject('unavailable'));
   ctx.clientKey = result.key;
+  ctx.viewerIp = result.ip;
   return Promise.resolve(undefined);
 };
 
@@ -100,5 +105,28 @@ export function guestQuotaStage(
     } catch {
       return reject('unavailable');
     }
+  };
+}
+
+// Requires a valid guest pass (ADR-052), sent in X-Auth-Token. A missing, forged, expired, or other-network pass
+// is `guest_check_failed`, which makes the browser run the bot check again. An unreadable secret refuses the
+// request instead (fail closed). Runs after chat_enabled and before anything is resolved or reserved.
+export function guestPassStage(
+  secrets: CachedSecrets,
+  now: () => number = Date.now,
+): AdmissionStage {
+  return async (ctx) => {
+    if (!ctx.clientKey) return reject('unavailable');
+    const state = await secrets.get();
+    if (state.status !== 'ready') return reject('unavailable');
+    const pass = ctx.headers.get(AUTH_HEADER);
+    if (!pass) return reject('guest_check_failed');
+    const verdict = verifyPass(
+      state.secrets.guestPassKey,
+      pass,
+      fingerprint(ctx.clientKey),
+      now(),
+    );
+    return verdict === 'valid' ? undefined : reject('guest_check_failed');
   };
 }
