@@ -19,3 +19,6 @@ crash.log
 backend.hcl
 *.tfplan
 plan.json
+
+# iCloud/Finder conflict copies such as "file 2.ts"
+* [0-9].*
