@@ -9,6 +9,8 @@ export interface SessionInfo {
 }
 
 export interface SessionPort {
+  // False until an identity provider exists; the UI hides every sign-in control.
+  readonly signInAvailable: boolean;
   read(): SessionInfo;
   // Resolves when the visitor is back from the provider with a session.
   beginSignIn(provider: AuthProvider): Promise<SessionInfo>;
