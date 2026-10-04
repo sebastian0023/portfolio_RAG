@@ -26,6 +26,8 @@ export interface AdmissionContext {
   config?: RuntimeConfig;
   provider?: LLMProvider;
   quota?: QuotaState;
+  // Bucket key of the viewer (IPv4 address or IPv6 /64) from the trusted edge header.
+  clientKey?: string;
 }
 
 export type AdmissionStage = (
