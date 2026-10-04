@@ -1,10 +1,6 @@
 locals {
   repo_slug = "${var.github_owner}/${var.github_repository}"
   oidc_host = "token.actions.githubusercontent.com"
-
-  # Repositories with immutable subject claims embed the numeric owner and repository ids in `sub`
-  # (GitHub OIDC customization: use_immutable_subject = true). The older plain form never matches them.
-  sub_prefix = "repo:${var.github_owner}@${var.github_owner_id}/${var.github_repository}@${var.github_repository_id}"
 }
 
 # The GitHub OIDC provider is shared by other projects in this account (ADR-047).
@@ -17,6 +13,7 @@ data "aws_iam_openid_connect_provider" "github" {
 # Plan role: assumable only by pull_request runs of this exact repository (ADR-008).
 # There is deliberately no apply role. CI apply stays disabled until an approval gate is proven (ADR-035, R-13).
 data "aws_iam_policy_document" "plan_trust" {
+  #checkov:skip=CKV_AWS_358:False positive. The check's repository regex does not allow "@", so it cannot parse GitHub's immutable subject form owner@id/repo@id. The value is a single exact repository, not a wildcard, and repository_id and repository_owner_id are also pinned below.
   statement {
     effect  = "Allow"
     actions = ["sts:AssumeRoleWithWebIdentity"]
@@ -35,7 +32,9 @@ data "aws_iam_policy_document" "plan_trust" {
     condition {
       test     = "StringEquals"
       variable = "${local.oidc_host}:sub"
-      values   = ["${local.sub_prefix}:pull_request"]
+      # Immutable subject claims (GitHub OIDC customization use_immutable_subject = true) embed the numeric
+      # owner and repository ids. The plain repo:<owner>/<repo> form never matches such a repository.
+      values = ["repo:${var.github_owner}@${var.github_owner_id}/${var.github_repository}@${var.github_repository_id}:pull_request"]
     }
 
     condition {
