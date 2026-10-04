@@ -55,8 +55,8 @@ data "aws_iam_policy_document" "api" {
   }
 
   statement {
-    sid       = "UpdateCounters"
-    actions   = ["dynamodb:UpdateItem"]
+    sid       = "UseCounters"
+    actions   = ["dynamodb:UpdateItem", "dynamodb:GetItem"]
     resources = [var.counters_table_arn]
   }
 
