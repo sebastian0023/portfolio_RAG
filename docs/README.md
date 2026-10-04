@@ -9,3 +9,4 @@ The [Notion plan](https://app.notion.com/p/3efc9c3293d981c4ab1bcf5e2dad3d55) is 
 - [AWS and GitHub access](operations/access.md): audit findings, MFA-gated operator role setup, and the deployment-gate limitation (P1-02).
 - [Budget kill switch](operations/kill-switch.md): design, drill results with timings, caveats, and recovery steps (P1-08, P1-09).
 - [Model and vector-store verification](operations/model-probe.md): probe results, the Haiku blocker, S3 Vectors limits, and shared quotas (P1-01).
+- [Applying infrastructure](operations/apply-procedure.md): the manual, serialized apply procedure and why CI apply is disabled (P1-12).

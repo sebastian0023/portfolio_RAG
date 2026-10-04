@@ -22,3 +22,6 @@ plan.json
 
 # iCloud/Finder conflict copies such as "file 2.ts"
 * [0-9].*
+
+# Build artifact of the OAC spike
+infra/spikes/**/handler.zip

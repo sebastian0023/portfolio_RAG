@@ -96,6 +96,41 @@ describe('plan guard (ADR-033, ADR-047)', () => {
     );
   });
 
+  test('allows the Lambda, CloudFront, and log group types under the prefix', () => {
+    const plans = [
+      change('aws_lambda_function', ['create'], {
+        function_name: 'portfolio-v2-prod-spike-stream',
+      }),
+      change('aws_cloudfront_distribution', ['create'], {
+        comment: 'portfolio-v2-prod-spike-oac-stream',
+      }),
+      change('aws_cloudfront_origin_access_control', ['create'], {
+        name: 'portfolio-v2-prod-spike-oac',
+      }),
+      change('aws_cloudwatch_log_group', ['create'], {
+        name: '/aws/lambda/portfolio-v2-prod-spike-stream',
+      }),
+    ];
+    for (const plan of plans) expect(checkPlan(plan)).toEqual([]);
+  });
+
+  test("rejects another project's log group and function", () => {
+    expect(
+      checkPlan(
+        change('aws_cloudwatch_log_group', ['update'], {
+          name: '/aws/lambda/lift-dev-get-today',
+        }),
+      ),
+    ).toHaveLength(1);
+    expect(
+      checkPlan(
+        change('aws_lambda_function', ['update'], {
+          function_name: 'relationship-rag-test-api-ChatFunction',
+        }),
+      ),
+    ).toHaveLength(1);
+  });
+
   test('rejects managing the shared OIDC provider', () => {
     const plan = change('aws_iam_openid_connect_provider', ['create'], {
       url: 'https://token.actions.githubusercontent.com',
@@ -106,8 +141,8 @@ describe('plan guard (ADR-033, ADR-047)', () => {
   test('fails closed on unknown resource types and unknown names', () => {
     expect(
       checkPlan(
-        change('aws_lambda_function', ['create'], {
-          function_name: 'portfolio-v2-prod-api',
+        change('aws_sqs_queue', ['create'], {
+          name: 'portfolio-v2-prod-jobs',
         }),
       )[0]?.reason,
     ).toContain('not allowed by the guard');

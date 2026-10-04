@@ -41,6 +41,13 @@ const NAME_ATTRIBUTE: Readonly<Record<string, string>> = {
   aws_ssm_parameter: 'name',
   aws_budgets_budget: 'name',
   aws_budgets_budget_action: 'budget_name',
+  aws_lambda_function: 'function_name',
+  aws_lambda_function_url: 'function_name',
+  aws_lambda_permission: 'function_name',
+  aws_cloudfront_distribution: 'comment',
+  aws_cloudfront_origin_access_control: 'name',
+  aws_cloudfront_origin_request_policy: 'name',
+  aws_cloudwatch_log_group: 'name',
 };
 
 // These types name their parent resource (a bucket or role) instead of carrying their own name.
@@ -56,6 +63,8 @@ const DEPENDENT_TYPES: ReadonlySet<string> = new Set([
   'aws_iam_role_policy',
   'aws_iam_role_policy_attachment',
   'aws_budgets_budget_action',
+  'aws_lambda_function_url',
+  'aws_lambda_permission',
 ]);
 
 // Destroying or replacing these loses state or data that cannot be recreated (ADR-033).
@@ -67,7 +76,11 @@ const PROTECTED_TYPES: ReadonlySet<string> = new Set([
   'aws_s3vectors_index',
 ]);
 
-const PREFIXES = ['portfolio-v2-', '/portfolio-v2/'];
+const PREFIXES = [
+  'portfolio-v2-',
+  '/portfolio-v2/',
+  '/aws/lambda/portfolio-v2-',
+];
 
 const isNoop = (actions: readonly string[]): boolean =>
   actions.every((action) => action === 'no-op' || action === 'read');
