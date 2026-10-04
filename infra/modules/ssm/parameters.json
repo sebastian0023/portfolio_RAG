@@ -25,7 +25,7 @@
     "limits": {
       "managed": "terraform",
       "format": "json",
-      "description": "Request caps, rate limits, and quotas. Provisional values from docs/operations/abuse-budgets.md.",
+      "description": "Request caps, rate limits, and quotas. Values from docs/operations/abuse-budgets.md and ADR-051.",
       "default": {
         "questionMaxChars": 500,
         "requestMaxBytes": 8192,
@@ -37,17 +37,17 @@
         "timeoutSeconds": 30,
         "preAuthPerIpPerMinute": 10,
         "preAuthGlobalPerMinute": 40,
-        "guestPerIpPerDay": 3,
-        "userPerDay": 10,
-        "globalPerDay": 30
+        "guestPerIpPerDay": 10,
+        "globalPerDay": 50
       }
     }
   },
-  "deferred": {
+  "secrets": {
     "turnstile_secret": {
-      "type": "SecureString",
-      "phase": 4,
-      "note": "The name is provisioned by Terraform in Phase 4. The value is injected out of band and never appears in source, plans, outputs, or logs (ADR-023, R-18)."
+      "description": "Cloudflare Turnstile secret key. The value is set out of band and never appears in source, plans, outputs, or logs (ADR-023, R-18)."
+    },
+    "guest_pass_key": {
+      "description": "HMAC key that signs one-hour guest passes (ADR-052). Rotating it invalidates every pass. The value is set out of band."
     }
   }
 }

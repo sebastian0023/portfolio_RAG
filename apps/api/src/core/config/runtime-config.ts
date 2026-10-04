@@ -53,7 +53,6 @@ const limitsSchema = z.strictObject({
   preAuthPerIpPerMinute: positiveInt(1000),
   preAuthGlobalPerMinute: positiveInt(100_000),
   guestPerIpPerDay: positiveInt(1000),
-  userPerDay: positiveInt(10_000),
   globalPerDay: positiveInt(100_000),
 });
 

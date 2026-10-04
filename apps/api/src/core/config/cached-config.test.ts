@@ -18,10 +18,9 @@ const limits = JSON.stringify({
   outputMaxTokens: 400,
   timeoutSeconds: 30,
   preAuthPerIpPerMinute: 10,
-  preAuthGlobalPerMinute: 60,
-  guestPerIpPerDay: 3,
-  userPerDay: 10,
-  globalPerDay: 30,
+  preAuthGlobalPerMinute: 40,
+  guestPerIpPerDay: 10,
+  globalPerDay: 50,
 });
 
 const raw = (chat: 'true' | 'false') => ({

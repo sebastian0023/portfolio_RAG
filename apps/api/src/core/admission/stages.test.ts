@@ -70,7 +70,7 @@ describe('admission stages (ADR-016, ADR-017)', () => {
     const { stages } = chain(store);
     const ctx = viewer();
     expect(await runAdmission(stages, ctx)).toBeUndefined();
-    expect(ctx.quota).toEqual({ left: 29, limit: 30 });
+    expect(ctx.quota).toEqual({ left: 49, limit: 50 });
     expect(ctx.provider).toBeDefined();
   });
 
@@ -218,7 +218,7 @@ describe('admission stages (ADR-016, ADR-017)', () => {
     );
   });
 
-  test('the 30th daily message is admitted and the 31st gets site_limit', async () => {
+  test('the 50th daily message is admitted and the 51st gets site_limit', async () => {
     const store = new InMemoryCounterStore();
     const raw = rawConfig({
       limits: JSON.stringify({
@@ -228,12 +228,12 @@ describe('admission stages (ADR-016, ADR-017)', () => {
       }),
     });
     let last;
-    for (let i = 1; i <= 30; i += 1) {
+    for (let i = 1; i <= 50; i += 1) {
       const ctx = viewer();
       expect(await runAdmission(chain(store, raw).stages, ctx)).toBeUndefined();
       last = ctx.quota;
     }
-    expect(last).toEqual({ left: 0, limit: 30 });
+    expect(last).toEqual({ left: 0, limit: 50 });
     expect(
       await runAdmission(chain(store, raw).stages, viewer()),
     ).toMatchObject({
