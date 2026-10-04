@@ -30,7 +30,7 @@ describe('log redaction (ADR-028)', () => {
         void input.request.question;
         yield {
           type: 'accepted',
-          quota: { left: 1, limit: 30, principal: 'guest' },
+          quota: { left: 1, limit: 30 },
         };
         yield { type: 'delta', text: CANARY_ANSWER };
         yield { type: 'done', coverage: 'none', cited: [] };

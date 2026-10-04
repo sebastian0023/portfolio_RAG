@@ -17,7 +17,7 @@ test('a visitor can ask a mocked question, inspect a source, and use the keyboar
   await expect(page.getByRole('button', { name: 'Open source 1' })).toBeVisible(
     { timeout: 20_000 },
   );
-  await expect(page.getByText('2 of 3 questions left today')).toBeVisible();
+  await expect(page.getByText('9 of 10 questions left today')).toBeVisible();
   await page.getByRole('button', { name: 'Open source 1' }).click();
   await expect(page.getByRole('dialog')).toBeVisible();
   await expect(page.getByRole('dialog').locator('mark').first()).toBeVisible();
@@ -30,7 +30,7 @@ test('a visitor can ask a mocked question, inspect a source, and use the keyboar
     .getByLabel('Your question')
     .fill('Tell me about a project [Name] built');
   await page.getByLabel('Your question').press('Enter');
-  await expect(page.getByText('1 of 3 questions left today')).toBeVisible();
+  await expect(page.getByText('8 of 10 questions left today')).toBeVisible();
 });
 
 test('responsive shell, limit state, and accessibility', async ({

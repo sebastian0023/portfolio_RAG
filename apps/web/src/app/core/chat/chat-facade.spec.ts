@@ -26,7 +26,7 @@ describe('ChatFacade: answer lifecycle', () => {
       'assistant',
     ]);
     expect(h.facade.input()).toBe('');
-    expect(h.facade.quota().left).toBe(2); // optimistic until the server confirms
+    expect(h.facade.quota().left).toBe(9); // optimistic until the server confirms
 
     const ch = h.transport.last;
     ch.emit({ type: 'accepted', quota: quota(2) });
@@ -226,13 +226,7 @@ describe('ChatFacade: failures before the server accepts', () => {
     return h;
   }
 
-  it.each([
-    'too_long',
-    'rate_limited',
-    'site_limit',
-    'unavailable',
-    'auth_expired',
-  ] as const)(
+  it.each(['too_long', 'rate_limited', 'site_limit', 'unavailable'] as const)(
     '%s removes the optimistic bubbles and puts the question back in the composer',
     async (code) => {
       const h = await failWith(code);
@@ -268,20 +262,6 @@ describe('ChatFacade: failures before the server accepts', () => {
     expect((await failWith('unavailable')).facade.chatEnabled()).toBe(false);
   });
 
-  it('auth_expired falls back to the guest limit and shows the session banner', async () => {
-    const h = await failWith(
-      'auth_expired',
-      {},
-      {
-        verified: true,
-        session: { status: 'signed-in' },
-        quota: quota(9, 10, 'user'),
-      },
-    );
-    expect(h.facade.sessionExpired()).toBe(true);
-    expect(h.facade.quota()).toEqual(quota(3, 3));
-  });
-
   it('guest_check_failed asks for the check again', async () => {
     const h = await failWith('guest_check_failed');
     expect(h.facade.check()).toBe('failed');
@@ -296,7 +276,7 @@ describe('ChatFacade: failures before the server accepts', () => {
     expect(h.facade.inline()).toEqual({ kind: 'network' });
     expect(h.facade.messages()).toEqual([]);
     expect(h.facade.input()).toBe('My question');
-    expect(h.facade.quota().left).toBe(3);
+    expect(h.facade.quota().left).toBe(10);
 
     h.facade.retryNetwork();
     await flush();
@@ -348,13 +328,13 @@ describe('ChatFacade: composer rules', () => {
   });
 
   it('sends only the last four finished turns as history', async () => {
-    const h = setup({ verified: true, quota: quota(10, 10, 'user') });
+    const h = setup({ verified: true, quota: quota(10, 10) });
     for (let i = 1; i <= 3; i++) {
       void h.facade.send(`q${i}`);
       await flush();
       h.transport.last.emit({
         type: 'accepted',
-        quota: quota(10 - i, 10, 'user'),
+        quota: quota(10 - i, 10),
       });
       h.transport.last.emit({ type: 'delta', text: `a${i}` });
       h.transport.last.emit({ type: 'done', coverage: 'answered', cited: [] });
@@ -427,61 +407,15 @@ describe('ChatFacade: guest check', () => {
     expect(h.facade.check()).toBe('idle');
     expect(h.transport.calls).toHaveLength(1);
   });
-
-  it('signed-in visitors skip the check', async () => {
-    const h = setup({ session: { status: 'signed-in' } });
-    void h.facade.send('Q');
-    await flush();
-    expect(h.guestCheck.calls).toBe(0);
-    expect(h.transport.calls).toHaveLength(1);
-  });
 });
 
-describe('ChatFacade: sign-in, viewer, toasts', () => {
-  it('signs in through the provider, shows a toast, and raises the limit', async () => {
-    const h = setup({ quota: quota(1) });
-    h.facade.openSignIn();
-    expect(h.facade.dialog()).toBe('signin');
-    const done = h.facade.chooseProvider('a');
-    expect(h.facade.redirecting()).toBe(true);
-    expect(h.facade.dialog()).toBeNull();
-    await done;
-    expect(h.facade.redirecting()).toBe(false);
-    expect(h.facade.isSignedIn()).toBe(true);
-    expect(h.facade.quota()).toEqual(quota(10, 10, 'user'));
-    expect(h.facade.toasts()[0]).toMatchObject({
-      kind: 'success',
-      text: 'Signed in as Ada',
-    });
-  });
-
-  it('shows an error toast that stays until dismissed when sign-in fails', async () => {
-    const h = setup();
-    h.session.nextSignIn = new Error('denied');
-    await h.facade.chooseProvider('b');
-    expect(h.facade.isSignedIn()).toBe(false);
-    await vi.advanceTimersByTimeAsync(10_000);
-    expect(h.facade.toasts()).toHaveLength(1);
-    h.facade.dismissToast(h.facade.toasts()[0]!.id);
-    expect(h.facade.toasts()).toHaveLength(0);
-  });
-
+describe('ChatFacade: viewer and toasts', () => {
   it('non-error toasts dismiss themselves', async () => {
     const h = setup();
     h.facade.pushToast('info', 'hello');
     expect(h.facade.toasts()).toHaveLength(1);
     await vi.advanceTimersByTimeAsync(5000);
     expect(h.facade.toasts()).toHaveLength(0);
-  });
-
-  it('sign out returns to the guest limit', async () => {
-    const h = setup({
-      session: { status: 'signed-in' },
-      quota: quota(9, 10, 'user'),
-    });
-    h.facade.signOut();
-    expect(h.facade.isSignedIn()).toBe(false);
-    expect(h.facade.quota()).toEqual(quota(3, 3));
   });
 
   it('opens, steps through, and closes the source viewer within bounds', async () => {

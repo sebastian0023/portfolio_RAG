@@ -14,7 +14,6 @@ const STATUS_BY_CODE: Readonly<Record<ChatErrorCode, number>> = {
   quota_exhausted: 429,
   site_limit: 429,
   unavailable: 503,
-  auth_expired: 401,
   guest_check_failed: 403,
   interrupted: 503,
 };

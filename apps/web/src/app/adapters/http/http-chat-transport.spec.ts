@@ -10,7 +10,7 @@ const encoder = new TextEncoder();
 const frame = (event: unknown) => `data: ${JSON.stringify(event)}\n\n`;
 const accepted = {
   type: 'accepted',
-  quota: { left: 29, limit: 30, principal: 'guest' },
+  quota: { left: 29, limit: 30 },
 };
 const done = { type: 'done', coverage: 'none', cited: [] };
 

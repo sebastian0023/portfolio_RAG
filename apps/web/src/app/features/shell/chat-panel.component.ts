@@ -41,12 +41,7 @@ export class ChatPanelComponent {
   protected readonly related = RELATED;
   protected readonly meter = computed(() => meterView(this.facade.quota()));
   protected readonly limit = computed(() =>
-    limitView(
-      this.facade.quota(),
-      this.facade.session(),
-      this.facade.siteLimit(),
-      new Date(),
-    ),
+    limitView(this.facade.quota(), this.facade.siteLimit(), new Date()),
   );
   protected readonly composer = computed(() =>
     composerView({

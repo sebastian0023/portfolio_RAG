@@ -29,7 +29,7 @@ test('the app runs under the real CSP with no violations', async ({ page }) => {
       body:
         frame({
           type: 'accepted',
-          quota: { left: 29, limit: 30, principal: 'guest' },
+          quota: { left: 29, limit: 30 },
         }) +
         frame({ type: 'delta', text: 'An answer.' }) +
         frame({ type: 'done', coverage: 'none', cited: [] }),

@@ -11,7 +11,7 @@ const SSE = {
 const frame = (event: unknown) => `data: ${JSON.stringify(event)}\n\n`;
 const accepted = {
   type: 'accepted',
-  quota: { left: 29, limit: 30, principal: 'guest' },
+  quota: { left: 29, limit: 30 },
 };
 const done = { type: 'done', coverage: 'none', cited: [] };
 
@@ -186,9 +186,12 @@ test('never reads the development query parameters', async ({ page }) => {
   await expect(page.getByLabel('Your question')).toBeEnabled();
 });
 
-test('offers no sign-in control while there is no identity provider', async ({
-  page,
-}) => {
+test('offers no sign-in or account control anywhere', async ({ page }) => {
   await page.goto('/');
-  await expect(page.getByRole('button', { name: /^Sign in/ })).toHaveCount(0);
+  await expect(
+    page.getByRole('heading', { name: 'Ask about [Name]' }),
+  ).toBeVisible();
+  await expect(
+    page.getByText(/sign[- ]?(in|out)|log ?in|account/i),
+  ).toHaveCount(0);
 });

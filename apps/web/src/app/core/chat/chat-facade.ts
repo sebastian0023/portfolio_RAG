@@ -14,16 +14,10 @@ import {
   type QuotaState,
 } from '@portfolio/shared';
 import { NetworkError } from '../ports/chat-transport';
-import type { AuthProvider, SessionInfo } from '../ports/session-port';
-import {
-  CHAT_TRANSPORT,
-  GUEST_CHECK_PORT,
-  SESSION_PORT,
-} from '../ports/tokens';
+import { CHAT_TRANSPORT, GUEST_CHECK_PORT } from '../ports/tokens';
 import { parseAnswer, plainAnswer } from './answer-parser';
 import {
   GUEST_LIMIT,
-  SIGNED_IN_LIMIT,
   type AssistantMessage,
   type ChatMessage,
   type ChatPhase,
@@ -52,12 +46,11 @@ function isAbort(error: unknown): boolean {
   return error instanceof DOMException && error.name === 'AbortError';
 }
 
-// Owns chat state and coordinates the transport, session, and guest check (ADR-002). Components
+// Owns chat state and coordinates the transport and the guest check (ADR-002). Components
 // read signals and call methods; they never see a port.
 @Injectable({ providedIn: 'root' })
 export class ChatFacade {
   private readonly transport = inject(CHAT_TRANSPORT);
-  private readonly sessionPort = inject(SESSION_PORT);
   private readonly guestCheck = inject(GUEST_CHECK_PORT);
   private readonly seed: ChatSeed = inject(CHAT_SEED, { optional: true }) ?? {};
 
@@ -65,11 +58,8 @@ export class ChatFacade {
     this.seed.messages ?? [],
   );
   private readonly _input = signal(this.seed.input ?? '');
-  private readonly _session = signal<SessionInfo>(
-    this.seed.session ?? this.sessionPort.read(),
-  );
   private readonly _quota = signal<QuotaState>(
-    this.seed.quota ?? this.defaultQuota(this._session()),
+    this.seed.quota ?? { left: GUEST_LIMIT, limit: GUEST_LIMIT },
   );
   private readonly _verified = signal(this.seed.verified ?? false);
   private readonly _check = signal<CheckState>(this.seed.check ?? 'idle');
@@ -80,7 +70,6 @@ export class ChatFacade {
     this.seed.dialog ?? null,
   );
   private readonly _viewer = signal<ViewerRef | null>(this.seed.viewer ?? null);
-  private readonly _redirecting = signal(this.seed.redirecting ?? false);
   private readonly _chatEnabled = signal(this.seed.chatEnabled ?? true);
   private readonly _siteLimit = signal(this.seed.siteLimit ?? false);
   private readonly _toasts = signal<readonly Toast[]>(this.seed.toasts ?? []);
@@ -89,13 +78,11 @@ export class ChatFacade {
 
   readonly messages = this._messages.asReadonly();
   readonly input = this._input.asReadonly();
-  readonly session = this._session.asReadonly();
   readonly quota = this._quota.asReadonly();
   readonly check = this._check.asReadonly();
   readonly inline = this._inline.asReadonly();
   readonly dialog = this._dialog.asReadonly();
   readonly viewerRef = this._viewer.asReadonly();
-  readonly redirecting = this._redirecting.asReadonly();
   readonly chatEnabled = this._chatEnabled.asReadonly();
   readonly siteLimit = this._siteLimit.asReadonly();
   readonly toasts = this._toasts.asReadonly();
@@ -139,11 +126,6 @@ export class ChatFacade {
     }
   });
 
-  readonly signInAvailable = this.sessionPort.signInAvailable;
-  readonly isSignedIn = computed(() => this._session().status === 'signed-in');
-  readonly sessionExpired = computed(
-    () => this._session().status === 'expired',
-  );
   readonly isEmpty = computed(() => this._messages().length === 0);
 
   readonly viewer = computed(() => {
@@ -200,7 +182,7 @@ export class ChatFacade {
       return;
     }
     if (!this.canSend()) return;
-    if (!this.isSignedIn() && !this._verified() && this.guestCheck.required) {
+    if (!this._verified() && this.guestCheck.required) {
       await this.runGuestCheck(q);
       return;
     }
@@ -259,45 +241,12 @@ export class ChatFacade {
     this._viewer.set({ messageId: v.messageId, index: next });
   }
 
-  openSignIn(): void {
-    this._dialog.set('signin');
-  }
-
   openHow(): void {
     this._dialog.set('how');
   }
 
   closeDialog(): void {
     this._dialog.set(null);
-  }
-
-  async chooseProvider(provider: AuthProvider): Promise<void> {
-    this._dialog.set(null);
-    this._redirecting.set(true);
-    try {
-      const info = await this.sessionPort.beginSignIn(provider);
-      this._session.set(info);
-      this._quota.set({
-        left: info.quota?.left ?? SIGNED_IN_LIMIT,
-        limit: info.quota?.limit ?? SIGNED_IN_LIMIT,
-        principal: 'user',
-      });
-      this.pushToast('success', `Signed in as ${info.displayName ?? 'you'}`);
-    } catch {
-      this.pushToast('error', "Couldn't sign in. Try again.");
-    } finally {
-      this._redirecting.set(false);
-    }
-  }
-
-  signOut(): void {
-    this.sessionPort.signOut();
-    this._session.set({ status: 'guest' });
-    this._quota.update((q) => ({
-      left: Math.min(q.left, GUEST_LIMIT),
-      limit: GUEST_LIMIT,
-      principal: 'guest',
-    }));
   }
 
   pushToast(kind: ToastKind, text: string): void {
@@ -320,16 +269,6 @@ export class ChatFacade {
       this._siteLimit() ||
       this._inline()?.kind === 'rate'
     );
-  }
-
-  private defaultQuota(session: SessionInfo): QuotaState {
-    return session.status === 'signed-in'
-      ? {
-          left: session.quota?.left ?? SIGNED_IN_LIMIT,
-          limit: SIGNED_IN_LIMIT,
-          principal: 'user',
-        }
-      : { left: GUEST_LIMIT, limit: GUEST_LIMIT, principal: 'guest' };
   }
 
   private async runGuestCheck(question: string): Promise<void> {
@@ -501,17 +440,6 @@ export class ChatFacade {
       case 'unavailable':
         this._chatEnabled.set(false);
         this._alert.set('The assistant is unavailable right now.');
-        break;
-      case 'auth_expired':
-        this._session.set({ status: 'expired' });
-        this._quota.update((q) => ({
-          left: Math.min(q.left, GUEST_LIMIT),
-          limit: GUEST_LIMIT,
-          principal: 'guest',
-        }));
-        this._alert.set(
-          'Your session ended. Sign in again to keep your higher limit.',
-        );
         break;
       case 'guest_check_failed':
         this._verified.set(false);

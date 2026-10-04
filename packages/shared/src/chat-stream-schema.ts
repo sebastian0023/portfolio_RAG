@@ -18,7 +18,6 @@ z.config({ jitless: true });
 const quotaSchema = z.strictObject({
   left: z.number().int().min(0),
   limit: z.number().int().min(1),
-  principal: z.enum(['guest', 'user']),
 });
 
 const sourceSchema = z
