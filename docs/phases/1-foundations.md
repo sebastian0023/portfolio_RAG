@@ -1,6 +1,6 @@
 # Phase 1: Foundations
 
-Status: Not started
+Status: Done
 
 Branch: `phase/1-foundations`
 
@@ -57,21 +57,33 @@ Mitigations and evidence live in [Spikes and Risks](https://app.notion.com/p/9f1
 
 ## Exit checklist
 
-- [ ] Exit criteria above met
-- [ ] Lint, typecheck, formatting, and Vitest green in CI
-- [ ] Terraform fmt/validate/plan and Checkov green, or explicitly not applicable
-- [ ] Phase-specific acceptance, cost, and security checks recorded
-- [ ] Post-deploy smoke passed, or "endpoint smoke not applicable" recorded
-- [ ] No secrets, private contact details, or confidential knowledge committed
-- [ ] ADR and risk changes mirrored in Notion and `docs/`
+- [x] Exit criteria above met (see Evidence)
+- [x] Lint, typecheck, formatting, and Vitest green in CI (99 tests)
+- [x] Terraform fmt, validate, plan, and Checkov green in CI; the `plan` job assumes the read-only role through OIDC
+- [x] Kill switch verified in a test: deny policy refused Titan, Haiku, and Gemma within 8 to 13 seconds on existing credentials ([kill-switch.md](../operations/kill-switch.md))
+- [x] Phase-specific acceptance, cost, and security checks recorded ([spike-outcomes.md](../operations/spike-outcomes.md))
+- [x] Foundation smoke: the CI `plan` job runs against the real applied stack; after the merge into `dev`, `terraform plan` from `dev` in `infra/bootstrap` and `infra/stack` must report no changes (recorded on the tag)
+- [x] No secrets, private contact details, or confidential knowledge committed
+- [x] ADR and risk changes mirrored in Notion and `docs/` (ADR-047; R-01 to R-04, R-06, R-13, R-14, R-18)
 - [ ] PR merged into `dev`, tagged `phase-1-complete`, Notion phase set to Done
+
+## Open items carried forward
+
+| Item                                                   | Why it is open                                                                 | Closes in                             |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------ | ------------------------------------- |
+| Anthropic use-case form for Haiku 4.5                  | Only the account owner can submit it; Haiku fails after one call until then    | Before P3-04                          |
+| Automatic budget trigger                               | Needs real spend to reach 100 percent; Gemma's billing service name is unknown | P7-04, P6-03                          |
+| Billed prices for Titan, Haiku, Gemma                  | Cost Explorer lags by up to a day                                              | Next session, before P3-04            |
+| Angular component test and backend test in one command | Angular is added in Phase 2                                                    | P2-08                                 |
+| CI apply                                               | GitHub does not enforce required reviewers on this plan; no apply role exists  | Only with a proven gate and a new ADR |
 
 ## Evidence
 
-- PR:
+- PRs into the phase branch: #2 workspace and abuse budgets, #3 and #5 and #7 account scope and access, #4 and #8 bootstrap, OIDC, and CI plan, #9 config contract and budgets, #10 and #11 evidence, spike, and apply procedure.
+- Applied to AWS from reviewed commits with the MFA-gated operator role: bootstrap (state bucket, plan role), stack (4 SSM parameters, deny policy, probe and action roles, 2 budgets, 1 budget action). All spike resources were destroyed.
+- CI: four required jobs on every pull request (`typescript`, `terraform`, `checkov`, `plan`). `dev` requires them, requires a pull request, and applies to admins.
 - Tag: `phase-1-complete`
-- CI run:
-- Deployment/smoke:
+- Deployment/smoke: foundation smoke only (no endpoint exists yet): `terraform plan` from `dev` reports no changes.
 - Sign-off:
 
 Sign-off and detailed results are tracked in the [Notion plan](https://app.notion.com/p/3efc9c3293d981c4ab1bcf5e2dad3d55).

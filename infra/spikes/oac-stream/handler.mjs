@@ -2,6 +2,8 @@ import { createHash } from 'node:crypto';
 
 // Streaming echo for the CloudFront OAC spike (P1-10, R-04). It reports facts about the request
 // but never logs or returns header values or the body: the auth token must stay out of logs.
+// Lambda does not pass the Authorization header into the event, so identity is proven by the origin's
+// own rejection of unsigned or forged requests (see probe.sh), not by inspecting that header.
 export const handler = awslambda.streamifyResponse(
   async (event, responseStream) => {
     const headers = event.headers ?? {};
@@ -15,9 +17,6 @@ export const handler = awslambda.streamifyResponse(
       bodyBytes: body.length,
       tokenHeaderPresent: typeof token === 'string' && token.length > 0,
       tokenLength: typeof token === 'string' ? token.length : 0,
-      authorizationIsSigV4: /^AWS4-HMAC-SHA256 /.test(
-        headers['authorization'] ?? '',
-      ),
       hashHeaderMatchesBody:
         headers['x-amz-content-sha256'] ===
         createHash('sha256').update(body).digest('hex'),

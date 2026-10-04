@@ -19,7 +19,6 @@ read -r code ttfb total < <(req -H "content-type: application/json" -H "x-amz-co
 [ "$code" = "200" ] && pass "status 200" || fail "status 200" "got $code"
 awk -v a="$ttfb" -v b="$total" 'BEGIN{exit !(b-a>1.0)}' && pass "streamed: first byte at ${ttfb}s, finished at ${total}s" || fail "streaming" "ttfb=$ttfb total=$total (buffered?)"
 grep -q '"tokenHeaderPresent":true' /tmp/oac.body && pass "custom X-Auth-Token reached the origin" || fail "token forwarded" "$(head -c 200 /tmp/oac.body)"
-grep -q '"authorizationIsSigV4":true' /tmp/oac.body && pass "origin saw a CloudFront SigV4 Authorization header" || fail "authorization is SigV4" "not seen by handler (Lambda may not pass it through)"
 grep -q '"hashHeaderMatchesBody":true' /tmp/oac.body && pass "payload hash header matches the body" || fail "hash matches" ""
 grep -qi '^x-cache: Miss from cloudfront' /tmp/oac.head && pass "not cached (first request is a Miss)" || fail "first request Miss" "$(grep -i '^x-cache' /tmp/oac.head)"
 
@@ -40,8 +39,15 @@ dcode=$(curl -sS -o /dev/null -w '%{http_code}' -X POST "$DIRECT" -d "$BODY" -H 
 [ "$dcode" = "403" ] && pass "direct call returned 403" || fail "direct denied" "got $dcode"
 
 echo "== 6. a spoofed viewer Authorization header cannot take over the origin identity"
+# The origin accepts only a valid SigV4 signature, so a forged header sent straight to it must fail (A).
+# The same forged header sent through CloudFront succeeds only if CloudFront replaced it with its own signature (B),
+# and CloudFront still enforces the payload hash (C).
+acode=$(curl -sS -o /dev/null -w '%{http_code}' -X POST "$DIRECT" -d "$BODY" -H "Authorization: Bearer attacker-supplied" -H "x-amz-content-sha256: $HASH")
+[ "$acode" = "403" ] && pass "A: forged Authorization sent directly to the origin returns 403" || fail "A: forged header rejected at origin" "got $acode"
 read -r code _ _ < <(req -H "x-amz-content-sha256: $HASH" -H "X-Auth-Token: $TOKEN" -H "Authorization: Bearer attacker-supplied"; echo)
-if [ "$code" = "200" ] && grep -q '"authorizationIsSigV4":true' /tmp/oac.body; then pass "spoofed Authorization was replaced by CloudFront's signature"; else fail "spoof overridden" "status $code, $(head -c 160 /tmp/oac.body)"; fi
+[ "$code" = "200" ] && pass "B: the same forged header through CloudFront returns 200, so CloudFront replaced it with its signature" || fail "B: spoof overridden" "got $code"
+read -r code _ _ < <(req -H "x-amz-content-sha256: 0000000000000000000000000000000000000000000000000000000000000000" -H "X-Auth-Token: $TOKEN" -H "Authorization: Bearer attacker-supplied"; echo)
+[ "$code" != "200" ] && pass "C: forged header plus wrong hash is still rejected ($code)" || fail "C: hash still enforced" "got 200"
 
 echo "== 7. the token never appears in the function's logs"
 sleep 20
