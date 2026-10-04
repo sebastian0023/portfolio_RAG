@@ -200,31 +200,49 @@ process.stdout.write(
   `      waiting ${Math.round(wait / 1000)} s for a fresh minute window\n`,
 );
 await new Promise((resolveWait) => setTimeout(resolveWait, wait));
-const burst = await Promise.all(
-  Array.from({ length: 15 }, () => chat(question('rate probe'))),
-);
-const statuses = burst.map((r) => r.status);
-const admitted = statuses.filter((s) => s !== 429).length;
-const limited = statuses.filter((s) => s === 429).length;
-const retryAfter = burst
-  .find((r) => r.status === 429)
-  ?.headers.get('retry-after');
+// Reserved concurrency is 5 (ADR-024), so a larger burst is refused by Lambda itself with a bare 429 before
+// this API sees it. Stay under that: four at once, then sequential requests, to count the per-IP limit of 10.
+const probe = (): Promise<Response> => chat(question('rate probe'));
+const wave = await Promise.all(Array.from({ length: 4 }, probe));
+const rest: Response[] = [];
+for (let i = 0; i < 6; i += 1) rest.push(await probe());
+const firstTen = [...wave, ...rest];
 report(
-  'exactly 10 of 15 concurrent requests are admitted',
-  admitted === 10 && limited === 5,
-  `${admitted} admitted, ${limited} limited`,
+  'the first 10 requests in the window are all admitted (4 concurrent, then 6 in a row)',
+  firstTen.every((r) => r.status !== 429),
+  firstTen.map((r) => r.status).join(','),
+);
+const eleventh = await probe();
+const twelfth = await probe();
+report(
+  'the 11th and 12th request are rate limited with Retry-After',
+  eleventh.status === 429 &&
+    twelfth.status === 429 &&
+    Number(eleventh.headers.get('retry-after')) >= 1,
+  `${eleventh.status}, ${twelfth.status}, retry-after ${String(eleventh.headers.get('retry-after'))}`,
 );
 report(
-  'limited responses carry Retry-After',
-  limited === 0 || Number(retryAfter) >= 1,
-  String(retryAfter),
+  'the refusal is an SSE rate_limited event',
+  (eleventh.headers.get('content-type') ?? '').includes('text/event-stream') &&
+    (await errorCode(eleventh)) === 'rate_limited',
 );
 if (!withChat) {
   report(
     'with chat off every admitted request is a 503 unavailable',
-    statuses.filter((s) => s === 503).length === admitted,
+    firstTen.every((r) => r.status === 503),
   );
 }
+// A burst beyond reserved concurrency gets Lambda's own bare 429 (no SSE body, no Retry-After). The browser
+// maps that to rate_limited with a 10 second retry (ADR-049); this just records that it is observed.
+const over = await Promise.all(Array.from({ length: 12 }, probe));
+const bare = over.filter(
+  (r) =>
+    r.status === 429 &&
+    !(r.headers.get('content-type') ?? '').includes('text/event-stream'),
+).length;
+process.stdout.write(
+  `      info: ${bare} of 12 burst requests got Lambda's bare 429\n`,
+);
 
 // 7. One real streamed answer (chat must be on, and a fresh minute is needed again).
 if (withChat) {
