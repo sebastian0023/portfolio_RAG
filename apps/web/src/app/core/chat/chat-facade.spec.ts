@@ -418,6 +418,16 @@ describe('ChatFacade: guest check', () => {
     expect(h.transport.calls).toHaveLength(1);
   });
 
+  it('skips the check entirely when no check exists yet (Phase 3)', async () => {
+    const h = setup({});
+    h.guestCheck.required = false;
+    void h.facade.send('Q');
+    await flush();
+    expect(h.guestCheck.calls).toBe(0);
+    expect(h.facade.check()).toBe('idle');
+    expect(h.transport.calls).toHaveLength(1);
+  });
+
   it('signed-in visitors skip the check', async () => {
     const h = setup({ session: { status: 'signed-in' } });
     void h.facade.send('Q');

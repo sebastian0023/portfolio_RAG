@@ -76,6 +76,7 @@ export class ScriptedTransport implements ChatTransport {
 }
 
 export class FakeSession implements SessionPort {
+  signInAvailable = true;
   info: SessionInfo = { status: 'guest' };
   nextSignIn: SessionInfo | Error = { status: 'signed-in', displayName: 'Ada' };
   read(): SessionInfo {
@@ -92,6 +93,7 @@ export class FakeSession implements SessionPort {
 }
 
 export class FakeGuestCheck implements GuestCheckPort {
+  required = true;
   results: GuestCheckResult[] = [];
   calls = 0;
   // Set to hold the check open until the test releases it.

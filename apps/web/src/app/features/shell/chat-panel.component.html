@@ -17,7 +17,7 @@
       <button type="button" class="text-btn" (click)="facade.signOut()">
         Sign out
       </button>
-    } @else {
+    } @else if (facade.signInAvailable) {
       <button type="button" class="neu-btn" (click)="facade.openSignIn()">
         Sign in
       </button>
@@ -30,9 +30,11 @@
   @if (facade.sessionExpired()) {
     <div class="inline-alert" role="alert">
       Your session ended.
-      <button type="button" class="text-btn" (click)="facade.openSignIn()">
-        Sign in again
-      </button>
+      @if (facade.signInAvailable) {
+        <button type="button" class="text-btn" (click)="facade.openSignIn()">
+          Sign in again
+        </button>
+      }
     </div>
   }
   @if (!facade.chatEnabled()) {
@@ -45,7 +47,7 @@
     <div class="limit" role="status">
       <h3>{{ cap.title }}</h3>
       <p>{{ cap.text }}</p>
-      @if (cap.signInCta) {
+      @if (cap.signInCta && facade.signInAvailable) {
         <button type="button" class="neu-btn" (click)="facade.openSignIn()">
           Sign in for more questions
         </button>

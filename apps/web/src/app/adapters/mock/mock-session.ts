@@ -6,6 +6,7 @@ import type {
 import { delay, type MockConfig } from './mock-config';
 
 export class MockSession implements SessionPort {
+  readonly signInAvailable = true;
   private info: SessionInfo;
 
   constructor(
@@ -35,6 +36,8 @@ export class MockSession implements SessionPort {
 }
 
 export class MockGuestCheck implements GuestCheckPort {
+  readonly required = true;
+
   constructor(private readonly config: MockConfig) {}
 
   async verify(signal?: AbortSignal): Promise<GuestCheckResult> {

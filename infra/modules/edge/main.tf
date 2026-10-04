@@ -17,14 +17,34 @@ resource "aws_cloudfront_origin_access_control" "web" {
   signing_protocol                  = "sigv4"
 }
 
-# Baseline security headers. The Content-Security-Policy is added with the web transport (P3-06).
+# One file feeds both this module and the Playwright production server, so what the browser tests run against is
+# what CloudFront sends (tests/contracts/edge-headers.test.ts keeps them honest).
+locals {
+  headers = jsondecode(file("${path.module}/security-headers.json"))
+
+  # Headers that CloudFront has no dedicated block for are sent as custom headers.
+  spa_custom_headers = {
+    for name in ["permissions-policy", "cross-origin-opener-policy", "cross-origin-resource-policy"] :
+    name => local.headers.spa[name]
+  }
+  api_custom_headers = {
+    for name in ["cache-control", "cross-origin-resource-policy"] :
+    name => local.headers.api[name]
+  }
+}
+
 resource "aws_cloudfront_response_headers_policy" "spa" {
   name    = "${var.name_prefix}-spa"
-  comment = "Baseline security headers for the SPA."
+  comment = "Security headers for the SPA."
 
   #checkov:skip=CKV_AWS_259:HSTS preload is irreversible once submitted and the default cloudfront.net domain is not eligible; revisit with the custom domain in Phase 7.
 
   security_headers_config {
+    content_security_policy {
+      content_security_policy = local.headers.spa["content-security-policy"]
+      override                = true
+    }
+
     strict_transport_security {
       access_control_max_age_sec = 31536000
       include_subdomains         = false
@@ -42,8 +62,67 @@ resource "aws_cloudfront_response_headers_policy" "spa" {
     }
 
     referrer_policy {
-      referrer_policy = "strict-origin-when-cross-origin"
+      referrer_policy = local.headers.spa["referrer-policy"]
       override        = true
+    }
+  }
+
+  custom_headers_config {
+    dynamic "items" {
+      for_each = local.spa_custom_headers
+
+      content {
+        header   = items.key
+        value    = items.value
+        override = true
+      }
+    }
+  }
+}
+
+resource "aws_cloudfront_response_headers_policy" "api" {
+  name    = "${var.name_prefix}-api"
+  comment = "Security headers for /api/*; responses are never cached."
+
+  #checkov:skip=CKV_AWS_259:HSTS preload is irreversible once submitted and the default cloudfront.net domain is not eligible; revisit with the custom domain in Phase 7.
+
+  security_headers_config {
+    content_security_policy {
+      content_security_policy = local.headers.api["content-security-policy"]
+      override                = true
+    }
+
+    strict_transport_security {
+      access_control_max_age_sec = 31536000
+      include_subdomains         = false
+      preload                    = false
+      override                   = true
+    }
+
+    content_type_options {
+      override = true
+    }
+
+    frame_options {
+      frame_option = "DENY"
+      override     = true
+    }
+
+    referrer_policy {
+      referrer_policy = local.headers.api["referrer-policy"]
+      override        = true
+    }
+  }
+
+  custom_headers_config {
+    dynamic "items" {
+      for_each = local.api_custom_headers
+
+      content {
+        header   = items.key
+        value    = items.value
+        override = true
+      }
     }
   }
 }
@@ -131,14 +210,15 @@ resource "aws_cloudfront_distribution" "edge" {
 
   # compress is off so the SSE stream is never buffered for compression.
   ordered_cache_behavior {
-    path_pattern             = "/api/*"
-    target_origin_id         = local.api_origin_id
-    viewer_protocol_policy   = "https-only"
-    allowed_methods          = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
-    cached_methods           = ["GET", "HEAD"]
-    compress                 = false
-    cache_policy_id          = local.caching_disabled_policy_id
-    origin_request_policy_id = aws_cloudfront_origin_request_policy.api.id
+    path_pattern               = "/api/*"
+    target_origin_id           = local.api_origin_id
+    viewer_protocol_policy     = "https-only"
+    allowed_methods            = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
+    cached_methods             = ["GET", "HEAD"]
+    compress                   = false
+    cache_policy_id            = local.caching_disabled_policy_id
+    origin_request_policy_id   = aws_cloudfront_origin_request_policy.api.id
+    response_headers_policy_id = aws_cloudfront_response_headers_policy.api.id
   }
 
   restrictions {

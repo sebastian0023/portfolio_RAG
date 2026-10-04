@@ -139,6 +139,7 @@ export class ChatFacade {
     }
   });
 
+  readonly signInAvailable = this.sessionPort.signInAvailable;
   readonly isSignedIn = computed(() => this._session().status === 'signed-in');
   readonly sessionExpired = computed(
     () => this._session().status === 'expired',
@@ -199,7 +200,7 @@ export class ChatFacade {
       return;
     }
     if (!this.canSend()) return;
-    if (!this.isSignedIn() && !this._verified()) {
+    if (!this.isSignedIn() && !this._verified() && this.guestCheck.required) {
       await this.runGuestCheck(q);
       return;
     }
