@@ -1,6 +1,6 @@
 # Phase 3: Edge + API skeleton
 
-Status: Deployed from the phase branch and smoke-tested; the final re-deploy from `dev`, the tag, and the Notion mirror remain.
+Status: Complete (deployed and smoke-tested from `dev`). Notion mirror and the items listed under "Not recorded" remain.
 
 Branch: `phase/3-edge-api-skeleton`
 
@@ -64,24 +64,26 @@ Each step follows [Applying infrastructure](../operations/apply-procedure.md) an
 
 ## Exit checklist
 
-- [ ] Exit criteria above met (deployed from `dev`; streaming answer end to end). Streaming through CloudFront to Haiku is proven from the phase branch; the repeat from `dev` remains.
+- [x] Exit criteria above met: deployed from `dev` (`b55f98b`), and a streamed plain-LLM answer works end to end through CloudFront (proven on the same code at `20c5255`; the bundle hash from `dev` is identical).
 - [x] Lint, typecheck, formatting, and Vitest green locally (308 root tests, 163 Angular tests, 6 mocked and 14 production-build browser tests) and in CI on every Phase 3 pull request.
 - [x] Terraform fmt, validate, plan, and the plan guard green in CI after the bootstrap apply; Checkov green (228 passed, 0 failed, 51 skipped, every skip justified).
 - [ ] Phase-specific acceptance, cost, and security checks recorded. Smoke results are below; the kill-switch drill result and the cost after 24 hours are still to be recorded.
-- [x] Post-deploy smoke passed from the phase branch (chat off: all checks; chat on: one streamed answer). To repeat from `dev`.
+- [x] Post-deploy smoke passed from the phase branch (chat off: all checks; chat on: one streamed answer) and again from `dev` (chat off: all checks).
 - [x] No secrets, private contact details, or confidential knowledge committed
 - [ ] ADR and risk changes mirrored in Notion and `docs/` (ADR-049 and ADR-050 are in `docs/`; Notion mirror and R-01, R-04, R-08, R-10, R-15 updates pending)
-- [ ] PR merged into `dev`, tagged `phase-3-complete`, Notion phase set to Done
+- [x] PR merged into `dev` and tagged `phase-3-complete`
+- [ ] Notion phase set to Done (owner)
 
 ## Evidence
 
 - Task PRs into the phase branch: #19 to #26, plus smoke-script fixes #27 and #28. Each was green on `typescript`, `terraform`, `checkov`, `plan`, and `browser-smoke` before merging.
-- PR into `dev`:
-- Tag: `phase-3-complete`
+- PR into `dev`: [#30](https://github.com/sebastian0023/portfolio_RAG/pull/30), merged as `b55f98b`
+- Tag: [`phase-3-complete`](https://github.com/sebastian0023/portfolio_RAG/tree/phase-3-complete) on `b55f98b`
 - CI run: all five required jobs green on every Phase 3 pull request. #21 to #26 first failed `plan` only because the plan role lacked `bedrock:GetInferenceProfile`; it passed after the owner applied `infra/bootstrap`.
 - Applied from reviewed commits with the MFA operator role: `infra/bootstrap` (plan-role reads), then `infra/stack` at `20c5255` (web bucket, distribution, counters table, API function and `live` alias, kill-switch target). A follow-up `terraform plan` reported no changes.
 - Deployment: `deploy-web.ts` from `20c5255` published 44 files (about 1.0 MB) and invalidated `/index.html` and `/version.json`.
 - Smoke, chat off (2026-10-04): the SPA and every security header from the shared policy; no inline script; `index.html` not cached and hashed assets immutable; `version.json` names the deployed commit; direct S3 object and unsigned Function URL refused (403); POST without a hash and with a wrong hash refused (403); unknown API path is a 404 SSE error, not HTML; `OPTIONS` is 405 with no CORS headers; 9 KB and 1 MB bodies are 413; a 501-character question is `too_long`; a wrong content type is 415; the first 10 requests in a minute are admitted and the 11th and 12th are rate limited with `Retry-After`; with chat off every admitted request is a 503. The first run of the older script failed two rate-limit checks because it sent 15 concurrent requests against reserved concurrency 5 (Lambda refused 10 with a bare 429); the script was fixed (#27) and a re-run passed everything.
+- From `dev` (`b55f98b`): the API bundle hash matches the one CI built; `terraform plan` on `infra/stack` reports no changes and the plan guard no violations; `deploy-web.ts` published 44 files and invalidated `/index.html` and `/version.json`; the chat-off smoke passed every check, `version.json` names `b55f98b`, the first 10 requests in a window were admitted (503, chat off), the 11th and 12th were 429 with `Retry-After`, and 6 of 12 over-concurrency requests got Lambda's bare 429.
 - Smoke, chat on (one bounded window, then `chat_enabled` set back to `false`): a 200 SSE stream; `accepted` first, deltas, `done` with no coverage; first byte and first delta at 1306 ms (cold start included) and the stream complete at 1418 ms for a one-sentence answer, so the stream shows as incremental only narrowly. The window was closed and verified (`chat_enabled` is `false`, the API role has no attached policies, and a request without the body hash is refused with 403).
 - Not recorded yet: the kill-switch drill timing on the API role, the browser check of a streamed answer and Stop, the cost after 24 hours, and the rollback rehearsal.
 - Security: no request bodies, tokens, or addresses are printed by the scripts; logs hold metadata only (redaction is unit-tested).
