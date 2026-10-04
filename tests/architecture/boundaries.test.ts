@@ -28,6 +28,7 @@ const SDK = 'no-restricted-imports';
 const targets: Record<string, string> = {
   'apps/api/src/core/ok-core.ts': 'export const core = 1;\n',
   'apps/api/src/adapters/adapter.ts': 'export const adapter = 1;\n',
+  'apps/api/src/testing/helper.ts': 'export const helper = 1;\n',
   'apps/web/src/web.ts': 'export const web = 1;\n',
   'apps/web/src/app/adapters/mock.ts': 'export const mock = 1;\n',
   'apps/web/src/app/core/ok-core.ts': 'export const webCore = 1;\n',
@@ -108,6 +109,30 @@ const cases: Record<string, [string, string | null]> = {
   ],
   'apps/web/src/ok-web-to-shared.ts': [
     "import { shared } from '../../../packages/shared/src/shared.js';\nexport const x = shared;\n",
+    null,
+  ],
+  'apps/api/src/core/bad-core-to-hono.ts': [
+    "import { Hono } from 'hono';\nexport const x = Hono;\n",
+    SDK,
+  ],
+  'apps/api/src/core/bad-core-to-testing.ts': [
+    "import { helper } from '../testing/helper.js';\nexport const x = helper;\n",
+    SDK,
+  ],
+  'apps/api/src/adapters/bad-adapter-to-testing.ts': [
+    "import { helper } from '../testing/helper.js';\nexport const x = helper;\n",
+    SDK,
+  ],
+  'apps/api/src/core/ok-core-test-uses-testing.test.ts': [
+    "import { helper } from '../testing/helper.js';\nexport const x = helper;\n",
+    null,
+  ],
+  'apps/api/src/core/bad-core-test-to-hono.test.ts': [
+    "import { Hono } from 'hono';\nexport const x = Hono;\n",
+    SDK,
+  ],
+  'apps/api/src/lambda.ts': [
+    "import { adapter } from './adapters/adapter.js';\nimport { core } from './core/ok-core.js';\nexport const x = [adapter, core];\n",
     null,
   ],
   'apps/api/src/adapters/ok-adapter.ts': [

@@ -36,7 +36,7 @@
         "outputMaxTokens": 400,
         "timeoutSeconds": 30,
         "preAuthPerIpPerMinute": 10,
-        "preAuthGlobalPerMinute": 60,
+        "preAuthGlobalPerMinute": 40,
         "guestPerIpPerDay": 3,
         "userPerDay": 10,
         "globalPerDay": 30

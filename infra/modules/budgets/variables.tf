@@ -39,3 +39,9 @@ variable "cost_scope_tag" {
   type        = string
   default     = "portfolio-v2-prod"
 }
+
+variable "additional_kill_target_roles" {
+  description = "Names of runtime roles, besides the probe, that the budget action attaches the deny policy to."
+  type        = list(string)
+  default     = []
+}

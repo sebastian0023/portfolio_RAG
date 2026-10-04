@@ -49,3 +49,9 @@ No billed prices exist yet: Cost Explorer lags by up to a day. The reference pri
 - R-01: Titan, Gemma, and Haiku verified by real calls. Billed prices remain to be compared once Cost Explorer has the data (checked again on 2026-10-04 at 08:06 UTC: nothing yet).
 - R-02: verified in us-east-1 for the 512-dimension cosine configuration and the metadata limits above. Price confirmation waits for billing data.
 - R-03: confirmed. One deny policy refused runtime and mantle inference within 13 seconds ([kill-switch.md](kill-switch.md)).
+
+## Phase 3: model permission and attribution
+
+- The API role may call only `bedrock:InvokeModelWithResponseStream` (the action behind `ConverseStream`). It is scoped to the `us.anthropic.claude-haiku-4-5-20251001-v1:0` inference profile and to the foundation-model ARNs that profile routes to, read from the profile itself by Terraform, with a `bedrock:InferenceProfileArn` condition. No `*`. Selecting the `global.` profile in `llm_config` needs a deliberate IAM change; until then it refuses with `unavailable`.
+- Billed prices are still pending: Cost Explorer had no data at the last check (2026-10-04 08:06 UTC). Record the billed Haiku, Titan, and Gemma figures here once available; the plan's reference prices stay marked provisional until then.
+- Taggable application inference profiles (ADR-047) are not adopted in Phase 3. The exact Haiku spend comes from the `CostScope` tag on the function and the Bedrock service budget; evaluate an application profile when the first billed data shows whether that attribution is too coarse.

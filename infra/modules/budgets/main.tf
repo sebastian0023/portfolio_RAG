@@ -2,7 +2,7 @@ locals {
   deny_policy_name  = "${var.name_prefix}-deny-model-invoke"
   probe_role_name   = "${var.name_prefix}-killswitch-probe"
   action_role_name  = "${var.name_prefix}-budget-action"
-  kill_target_roles = [local.probe_role_name]
+  kill_target_roles = concat([local.probe_role_name], var.additional_kill_target_roles)
 }
 
 # Deny policy attached by the budget action. It covers both endpoint families (R-03): runtime inference

@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, test } from 'vitest';
+import { MAX_REQUEST_BYTES } from '@portfolio/shared';
 import {
   PARAMETER_NAMES,
   parseRuntimeConfig,
@@ -78,5 +79,30 @@ describe('SSM parameter contract (P1-07)', () => {
     for (const entry of Object.values(manifest.parameters)) {
       expect(entry.description.length).toBeGreaterThan(20);
     }
+  });
+
+  describe('Phase 3 limits stay inside what the platform allows', () => {
+    const limits = manifest.parameters.limits?.default as Record<
+      string,
+      number
+    >;
+
+    test('the global pre-auth rate stays under the Haiku cross-region quota of 50 requests a minute', () => {
+      // docs/operations/model-probe.md: one request per minute beyond this is throttled by Bedrock itself.
+      expect(limits.preAuthGlobalPerMinute).toBeLessThanOrEqual(50);
+    });
+
+    test('output is capped at 400 tokens (ADR-024)', () => {
+      expect(limits.outputMaxTokens).toBeLessThanOrEqual(400);
+    });
+
+    test('the request byte cap in SSM matches the shared wire constant', () => {
+      expect(limits.requestMaxBytes).toBe(MAX_REQUEST_BYTES);
+    });
+
+    test('the model deadline leaves room inside the Lambda timeout', () => {
+      // infra/stack passes timeoutSeconds + 5 to the function; the origin read timeout is 60 s.
+      expect((limits.timeoutSeconds ?? 0) + 5).toBeLessThanOrEqual(60);
+    });
   });
 });

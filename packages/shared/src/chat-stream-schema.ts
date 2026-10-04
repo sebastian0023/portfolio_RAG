@@ -9,6 +9,12 @@ import {
 // Trust-boundary validation for events arriving in the browser (ADR-044). Kept apart from the
 // contract types so a bundle that only needs the types does not pull in zod.
 
+// The browser runs under a Content-Security-Policy without 'unsafe-eval'. Zod probes `new Function(...)` to
+// decide whether it can compile validators, and a strict CSP reports that probe as a violation even though
+// the error is caught. Validation is a handful of tiny events per answer, so the interpreted path is fine.
+// This is global to the zod instance; only the browser imports this module.
+z.config({ jitless: true });
+
 const quotaSchema = z.strictObject({
   left: z.number().int().min(0),
   limit: z.number().int().min(1),

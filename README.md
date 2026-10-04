@@ -1,12 +1,12 @@
 # Portfolio v2
 
-An AWS serverless portfolio planned around an Angular presentation card and a cited, retrieval-augmented chat. The Phase 2 UI runs locally with a deterministic mock backend. The real API and deployment belong to later phases.
+An AWS serverless portfolio planned around an Angular presentation card and a cited, retrieval-augmented chat. The Phase 2 UI runs locally with a deterministic mock backend. Phase 3 adds the edge (CloudFront, private S3, a streaming Lambda) and a plain-LLM chat API; retrieval, sign-in, and bot checks belong to later phases.
 
 The [Notion plan](https://app.notion.com/p/3efc9c3293d981c4ab1bcf5e2dad3d55) tracks eight phases, tasks, decisions, risks, and exit evidence. ADR and phase mirrors are in `docs/`.
 
 ## Workspace
 
-`apps/web` holds the Angular SPA; `apps/api` will hold the Lambda API; `packages/shared` holds framework-free ports and types. `infra/` contains Terraform foundations, `knowledge/` is reserved for reviewed public RAG material, and `evals/` holds model and security evaluations.
+`apps/web` holds the Angular SPA; `apps/api` holds the Lambda API; `packages/shared` holds framework-free ports and types. `infra/` contains Terraform foundations, `knowledge/` is reserved for reviewed public RAG material, and `evals/` holds model and security evaluations.
 
 ## Local checks
 

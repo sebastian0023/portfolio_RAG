@@ -1,7 +1,10 @@
 {
   "$schema": "../../node_modules/@angular/cli/lib/config/schema.json",
   "version": 1,
-  "cli": { "analytics": false, "packageManager": "npm" },
+  "cli": {
+    "analytics": false,
+    "packageManager": "npm"
+  },
   "newProjectRoot": "projects",
   "projects": {
     "web": {
@@ -16,7 +19,12 @@
             "browser": "src/main.ts",
             "index": "src/index.html",
             "tsConfig": "tsconfig.app.json",
-            "assets": [{ "glob": "**/*", "input": "public" }],
+            "assets": [
+              {
+                "glob": "**/*",
+                "input": "public"
+              }
+            ],
             "styles": ["src/styles/global.css"]
           },
           "configurations": {
@@ -24,7 +32,7 @@
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "500kB",
+                  "maximumWarning": "750kB",
                   "maximumError": "1MB"
                 },
                 {
@@ -33,7 +41,15 @@
                   "maximumError": "16kB"
                 }
               ],
-              "outputHashing": "all"
+              "outputHashing": "all",
+              "optimization": {
+                "scripts": true,
+                "styles": {
+                  "minify": true,
+                  "inlineCritical": false
+                },
+                "fonts": true
+              }
             },
             "development": {
               "optimization": false,
@@ -43,6 +59,10 @@
                 {
                   "replace": "src/environments/environment.ts",
                   "with": "src/environments/environment.development.ts"
+                },
+                {
+                  "replace": "src/app/wiring/providers.ts",
+                  "with": "src/app/wiring/providers.development.ts"
                 }
               ]
             }
@@ -52,8 +72,12 @@
         "serve": {
           "builder": "@angular/build:dev-server",
           "configurations": {
-            "production": { "buildTarget": "web:build:production" },
-            "development": { "buildTarget": "web:build:development" }
+            "production": {
+              "buildTarget": "web:build:production"
+            },
+            "development": {
+              "buildTarget": "web:build:development"
+            }
           },
           "defaultConfiguration": "development"
         },

@@ -4,7 +4,17 @@
   "version": "0.0.0",
   "type": "module",
   "dependencies": {
+    "@aws-sdk/client-bedrock-runtime": "3.1146.0",
+    "@aws-sdk/client-dynamodb": "3.1146.0",
+    "@aws-sdk/client-ssm": "3.1146.0",
     "@portfolio/shared": "*",
+    "hono": "4.13.13",
     "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2"
+  },
+  "scripts": {
+    "build": "node scripts/build.ts"
   }
 }

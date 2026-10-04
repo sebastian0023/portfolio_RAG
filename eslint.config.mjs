@@ -111,8 +111,10 @@ export default tseslint.config(
     },
   },
   {
-    // ADR-036: business logic and shared contracts never touch cloud or provider SDKs.
+    // ADR-036: business logic and shared contracts never touch cloud or provider SDKs, and the web
+    // framework stays at the edge of the API. Test support never ships (it is excluded from the build).
     files: ['apps/api/src/core/**/*.ts', 'packages/shared/**/*.ts'],
+    ignores: ['**/*.test.ts'],
     rules: {
       'no-restricted-imports': [
         'error',
@@ -128,6 +130,62 @@ export default tseslint.config(
               ],
               message:
                 'SDKs belong in apps/api/src/adapters; core and shared depend on ports only.',
+            },
+            {
+              group: ['hono', 'hono/*'],
+              message:
+                'Hono is a transport detail; it belongs in apps/api/src/adapters only.',
+            },
+            {
+              group: ['**/testing/**'],
+              message: 'Test support must not be imported by production code.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    // Core tests may use test support, but still never an SDK or the web framework.
+    files: ['apps/api/src/core/**/*.test.ts', 'packages/shared/**/*.test.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: [
+                '@aws-sdk/*',
+                '@smithy/*',
+                'aws-jwt-verify',
+                '@anthropic-ai/*',
+                'openai',
+                'hono',
+                'hono/*',
+              ],
+              message:
+                'Core tests exercise ports with fakes; SDKs and Hono belong to adapters.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['apps/api/src/**/*.ts'],
+    ignores: [
+      'apps/api/src/core/**',
+      'apps/api/src/testing/**',
+      '**/*.test.ts',
+    ],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['**/testing/**'],
+              message: 'Test support must not be imported by production code.',
             },
           ],
         },
