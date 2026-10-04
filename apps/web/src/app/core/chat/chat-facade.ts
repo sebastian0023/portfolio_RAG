@@ -182,7 +182,8 @@ export class ChatFacade {
       return;
     }
     if (!this.canSend()) return;
-    if (!this._verified() && this.guestCheck.required) {
+    // The facade's own flag covers the seeded design frames; the port decides whether the pass is still usable.
+    if (!this._verified() || !this.guestCheck.isReady()) {
       await this.runGuestCheck(q);
       return;
     }
@@ -442,6 +443,7 @@ export class ChatFacade {
         this._alert.set('The assistant is unavailable right now.');
         break;
       case 'guest_check_failed':
+        this.guestCheck.invalidate();
         this._verified.set(false);
         this._check.set('failed');
         this._alert.set("Couldn't verify you. Try again.");

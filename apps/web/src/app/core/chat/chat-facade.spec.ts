@@ -398,14 +398,40 @@ describe('ChatFacade: guest check', () => {
     expect(h.transport.calls).toHaveLength(1);
   });
 
-  it('skips the check entirely when no check exists yet (Phase 3)', async () => {
-    const h = setup({});
-    h.guestCheck.required = false;
+  it('checks again when the held pass is no longer usable, even after an earlier pass', async () => {
+    const h = setup({ verified: true });
+    h.guestCheck.ready = false; // the one-hour pass ran out
+    void h.facade.send('Q');
+    await vi.advanceTimersByTimeAsync(700);
+    expect(h.guestCheck.calls).toBe(1);
+    expect(h.transport.calls).toHaveLength(1);
+  });
+
+  it('does not check while a usable pass is held', async () => {
+    const h = setup({ verified: true });
     void h.facade.send('Q');
     await flush();
     expect(h.guestCheck.calls).toBe(0);
-    expect(h.facade.check()).toBe('idle');
     expect(h.transport.calls).toHaveLength(1);
+  });
+
+  it('a refused pass is forgotten, the question comes back, and retry checks then sends', async () => {
+    const h = setup({ verified: true });
+    void h.facade.send('My question');
+    await flush();
+    h.transport.last.emit({
+      type: 'error',
+      error: { code: 'guest_check_failed' },
+    });
+    await flush();
+    expect(h.guestCheck.invalidations).toBe(1);
+    expect(h.facade.check()).toBe('failed');
+    expect(h.facade.input()).toBe('My question');
+    expect(h.facade.messages()).toEqual([]);
+    void h.facade.retryCheck();
+    await vi.advanceTimersByTimeAsync(700);
+    expect(h.guestCheck.calls).toBe(1);
+    expect(h.transport.calls).toHaveLength(2);
   });
 });
 

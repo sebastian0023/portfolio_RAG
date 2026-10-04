@@ -1,4 +1,5 @@
 import {
+  AUTH_HEADER,
   CHAT_API_PATH,
   MAX_REQUEST_BYTES,
   createSseDecoder,
@@ -33,6 +34,8 @@ const isAbort = (error: unknown): boolean =>
 export class HttpChatTransport implements ChatTransport {
   constructor(
     private readonly fetchImpl: typeof fetch = (...args) => fetch(...args),
+    // The one-hour guest pass, or null when the visitor has none (ADR-052). It travels in X-Auth-Token.
+    private readonly passProvider: () => string | null = () => null,
   ) {}
 
   send(
@@ -49,6 +52,7 @@ export class HttpChatTransport implements ChatTransport {
     const { bytes } = fitRequest(request, MAX_REQUEST_BYTES);
     const hash = await sha256Hex(bytes);
 
+    const pass = this.passProvider();
     let response: Response;
     try {
       response = await this.fetchImpl(CHAT_API_PATH, {
@@ -58,6 +62,7 @@ export class HttpChatTransport implements ChatTransport {
           'content-type': 'application/json',
           'x-amz-content-sha256': hash,
           accept: 'text/event-stream',
+          ...(pass === null ? {} : { [AUTH_HEADER]: pass }),
         },
         signal,
         cache: 'no-store',

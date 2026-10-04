@@ -73,3 +73,9 @@ export function isDeployableBranchList(
     /^origin\/(dev|phase\/[\w.-]+)$/.test(branch.trim()),
   );
 }
+
+// The production build needs the public Turnstile sitekey (ADR-052). An empty one ships a page whose bot check
+// can never pass, so the deploy refuses it. `source` is the text of src/environments/environment.ts.
+export function hasTurnstileSiteKey(source: string): boolean {
+  return /turnstileSiteKey:\s*'0x[0-9A-Za-z_-]{16,}'/.test(source);
+}

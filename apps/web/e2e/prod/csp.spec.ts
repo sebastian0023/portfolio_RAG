@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
+import { stubGuestCheck } from './support';
 
 // The production bundle under the exact headers CloudFront will send. A violation here would be a blank or
 // broken page in production, so any CSP report fails the test.
@@ -22,6 +23,7 @@ test('the app runs under the real CSP with no violations', async ({ page }) => {
       );
     });
   });
+  await stubGuestCheck(page);
   await page.route('**/api/chat', (route) =>
     route.fulfill({
       status: 200,
@@ -37,9 +39,9 @@ test('the app runs under the real CSP with no violations', async ({ page }) => {
   );
 
   const response = await page.goto('/');
-  expect(response?.headers()['content-security-policy']).toContain(
-    "script-src 'self'",
-  );
+  const csp = response?.headers()['content-security-policy'] ?? '';
+  expect(csp).toContain("script-src 'self' https://challenges.cloudflare.com");
+  expect(csp).toContain('frame-src https://challenges.cloudflare.com');
   await page.getByLabel('Your question').fill('Does the page work?');
   await page.getByLabel('Your question').press('Enter');
   await expect(
