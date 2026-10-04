@@ -1,4 +1,8 @@
-import type { ChatStreamEvent } from '@portfolio/shared';
+import type {
+  ChatStreamEvent,
+  LLMProvider,
+  QuotaState,
+} from '@portfolio/shared';
 import type { RuntimeConfig } from '../config/runtime-config.js';
 import type { Logger } from '../ports/logger.js';
 import {
@@ -13,6 +17,9 @@ export interface ChatServiceInput {
   readonly request: ParsedChatRequest;
   readonly config: RuntimeConfig;
   readonly signal: AbortSignal;
+  readonly provider: LLMProvider;
+  readonly quota: QuotaState;
+  readonly requestId: string;
 }
 
 // Produces the answer stream for an admitted request. A first event of `error` means the request failed
@@ -79,9 +86,8 @@ export function createChatHandler(deps: ChatHandlerDeps): ChatHandler {
       };
     }
 
-    const request = ctx.request;
-    const config = ctx.config;
-    if (!request || !config) {
+    const { request, config, provider, quota } = ctx;
+    if (!request || !config || !provider || !quota) {
       // A chain that admits without filling these in is a wiring bug. Refuse rather than guess.
       deps.logger.log({
         requestId,
@@ -95,7 +101,14 @@ export function createChatHandler(deps: ChatHandlerDeps): ChatHandler {
       };
     }
 
-    const stream = deps.service.stream({ request, config, signal: ctx.signal });
+    const stream = deps.service.stream({
+      request,
+      config,
+      signal: ctx.signal,
+      provider,
+      quota,
+      requestId,
+    });
     const iterator = stream[Symbol.asyncIterator]();
     const first = await iterator.next();
     const opening = first.done ? undefined : first.value;

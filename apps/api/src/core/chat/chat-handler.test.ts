@@ -2,6 +2,7 @@ import type { ChatStreamEvent } from '@portfolio/shared';
 import { describe, expect, test } from 'vitest';
 import {
   configFrom,
+  wiringStage,
   context,
   memoryLogger,
   rawConfig,
@@ -20,6 +21,7 @@ const stages = () => [
   byteCapStage,
   schemaStage,
   configStage(configFrom(rawConfig())),
+  wiringStage,
 ];
 
 const serviceOf = (events: ChatStreamEvent[]): ChatService => ({
@@ -166,5 +168,22 @@ describe('chat handler (ADR-049)', () => {
     const response = await handler(context(), 'r');
     await collect(response.events);
     expect(logger.events.at(-1)).toMatchObject({ outcome: 'interrupted' });
+  });
+});
+
+describe('chat handler wiring', () => {
+  test('refuses when no stage supplied a provider or quota (fail closed)', async () => {
+    const handler = createChatHandler({
+      stages: [
+        contentTypeStage,
+        byteCapStage,
+        schemaStage,
+        configStage(configFrom(rawConfig())),
+      ],
+      service: serviceOf([accepted, done]),
+      logger: memoryLogger(),
+    });
+    const response = await handler(context(), 'r');
+    expect(response.status).toBe(503);
   });
 });

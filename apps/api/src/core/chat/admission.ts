@@ -1,4 +1,10 @@
-import { MAX_QUESTION_LENGTH, MAX_REQUEST_BYTES } from '@portfolio/shared';
+import {
+  MAX_QUESTION_LENGTH,
+  MAX_REQUEST_BYTES,
+  type LLMProvider,
+  type QuotaState,
+} from '@portfolio/shared';
+import type { ProviderRegistry } from '../llm/provider-registry.js';
 import type { CachedConfig } from '../config/cached-config.js';
 import type { RuntimeConfig } from '../config/runtime-config.js';
 import {
@@ -18,6 +24,8 @@ export interface AdmissionContext {
   bodyBytes?: Uint8Array;
   request?: ParsedChatRequest;
   config?: RuntimeConfig;
+  provider?: LLMProvider;
+  quota?: QuotaState;
 }
 
 export type AdmissionStage = (
@@ -113,5 +121,16 @@ export function configStage(config: CachedConfig): AdmissionStage {
     }
     ctx.config = state.config;
     return undefined;
+  };
+}
+
+// Resolves the configured model to an adapter. A pair with no adapter is refused here, before anything is
+// reserved or spent.
+export function providerStage(registry: ProviderRegistry): AdmissionStage {
+  return (ctx) => {
+    const provider = ctx.config ? registry.resolve(ctx.config.llm) : null;
+    if (!provider) return Promise.resolve(reject('unavailable'));
+    ctx.provider = provider;
+    return Promise.resolve(undefined);
   };
 }

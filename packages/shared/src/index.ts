@@ -1,6 +1,7 @@
 export type {
   LLMProvider,
   LLMRequest,
+  LLMTurn,
   LLMEvent,
   LLMUsage,
   LLMError,
