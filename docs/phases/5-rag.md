@@ -51,15 +51,15 @@ Owner decisions: the owner supplies the source material and approves every knowl
 
 ## What is built
 
-| Task  | Result                                                                                                                                          | PR       |
-| ----- | ----------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| P5-01 | Tooling only: strict frontmatter, public-safety scan, authoring guide. **The knowledge files themselves are not written** (owner material).     | #44, #43 |
-| P5-02 | Chunker (at most 600 characters, stable ids), metadata limits in UTF-8 bytes, canonical manifest whose hash names the index                     | #44      |
-| P5-03 | `IndexRepository` contract, in-memory fake, S3 Vectors adapter, Titan embedder, two contract suites. Live cosine check written, **not yet run** | #45      |
-| P5-04 | Vector bucket and ingest/eval roles in Terraform (applied 2026-10-05); bounded, idempotent, resumable ingest CLI                                | #46, #47 |
-| P5-05 | `PromptBuilder`, grounded prompt, escaping, citation and highlight policy, `RagService`, `indexReadyStage`; plain service removed               | #48, #49 |
-| P5-06 | Citations under the real CSP: hostile text, fabricated markers, unsafe links, mobile viewer (no component change was needed)                    | #50      |
-| P5-07 | Eval gate and CLI, promote / rollback / prune with a randomized safety test, runbooks. first index promoted 2026-10-05, rollback drill passed   | #51      |
+| Task  | Result                                                                                                                                                                                       | PR       |
+| ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| P5-01 | Tooling only: strict frontmatter, public-safety scan, authoring guide. **The knowledge files themselves are not written** (owner material).                                                  | #44, #43 |
+| P5-02 | Chunker (at most 600 characters, stable ids), metadata limits in UTF-8 bytes, canonical manifest whose hash names the index                                                                  | #44      |
+| P5-03 | `IndexRepository` contract, in-memory fake, S3 Vectors adapter, Titan embedder, two contract suites. Live cosine check written, **not yet run**                                              | #45      |
+| P5-04 | Vector bucket and ingest/eval roles in Terraform (applied 2026-10-05); bounded, idempotent, resumable ingest CLI                                                                             | #46, #47 |
+| P5-05 | `PromptBuilder`, grounded prompt, escaping, citation and highlight policy, `RagService`, `indexReadyStage`; plain service removed                                                            | #48, #49 |
+| P5-06 | Citations under the real CSP: hostile text, fabricated markers, unsafe links, mobile viewer (no component change was needed)                                                                 | #50      |
+| P5-07 | Eval gate and CLI, promote / rollback / prune with a randomized safety test, runbooks. first index promoted 2026-10-05, rollback drill passed; active index is now `chunks-bb5e0ea4bc36dd0f` | #51      |
 
 Design: [ADR-053](../adr/adr-053.md) and [ADR-054](../adr/adr-054.md). Operations: [index-lifecycle.md](../operations/index-lifecycle.md) and [phase-5-finish.md](../operations/phase-5-finish.md).
 
@@ -103,6 +103,7 @@ Mitigations and evidence live in [Spikes and Risks](https://app.notion.com/p/9f1
 - Ingest (as the ingest role): dry run, then `--apply` created `chunks-351064a707096da2` (9 files, 34 chunks, 34 embedding calls, estimated $0.00005); a second `--apply` was a no-op with 0 embedding calls.
 - Gate (as the eval role, 20 golden questions, real Titan, S3 Vectors, Haiku): hit@5 0.923 (12 of 13), off-topic abstention 1.0, injection leaks 0, valid citations 1.0, largest billed prompt 690 tokens. Passed on thresholds fixed before the run. Reports in `evals/reports/`, manifests in `evals/indexes/`.
 - Promotion and rollback drill (chat off): promoted `chunks-351064a7…`, built and gated a salted second index `chunks-ec11aefd…`, promoted it, rolled back (`status` showed the first index active and the second as the previous one), `eval --smoke` ran against the restored index, and `prune` reported nothing to delete.
+- Corpus update (2026-10-05): the CORAE file was expanded from the owner's notes (#55), giving 38 chunks and a new index `chunks-bb5e0ea4bc36dd0f`. Ingested (38 embedding calls, then a no-op re-run), gated with the same metrics as before (hit@5 0.923, abstention 1.0, 0 leaks, citations 1.0, 690 tokens; the `current-role` case still misses, so it is not a content gap) and promoted. The first index is the rollback target. Chat stayed off.
 - Smoke: chat off, every check passed; bounded window (`chat_enabled` true, then false, read back), `smoke-edge.ts --window` passed all five checks (forged and missing passes refused, a bogus Turnstile token refused by Cloudflare, uncached JSON, malformed body 400).
 - Not recorded yet: the owner's browser check on desktop and phone (grounded answer with working citations and viewer, off-topic abstention, injection attempt, the quota counter text and Stop button), the 24-hour Cost Explorer figure for Titan, Haiku and S3 Vectors, the live cosine test (`S3VECTORS_LIVE=1`), the Notion mirror, and sign-off.
 - Tag: `phase-5-complete`
