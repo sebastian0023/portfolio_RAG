@@ -1,6 +1,6 @@
 # Phase 5: RAG
 
-Status: Code complete and merged to the phase branch (2026-10-05). Waiting on the owner: the knowledge corpus, the AWS applies, ingestion, promotion, and the chat window ([phase-5-finish.md](../operations/phase-5-finish.md)).
+Status: Deployed and verified from `dev` (2026-10-05) except the owner's browser check of a grounded answer and the 24-hour cost figure. Chat is off; the first index is active.
 
 Branch: `phase/5-rag`
 
@@ -56,10 +56,10 @@ Owner decisions: the owner supplies the source material and approves every knowl
 | P5-01 | Tooling only: strict frontmatter, public-safety scan, authoring guide. **The knowledge files themselves are not written** (owner material).     | #44, #43 |
 | P5-02 | Chunker (at most 600 characters, stable ids), metadata limits in UTF-8 bytes, canonical manifest whose hash names the index                     | #44      |
 | P5-03 | `IndexRepository` contract, in-memory fake, S3 Vectors adapter, Titan embedder, two contract suites. Live cosine check written, **not yet run** | #45      |
-| P5-04 | Vector bucket and ingest/eval roles in Terraform (**not applied**); bounded, idempotent, resumable ingest CLI                                   | #46, #47 |
+| P5-04 | Vector bucket and ingest/eval roles in Terraform (applied 2026-10-05); bounded, idempotent, resumable ingest CLI                                | #46, #47 |
 | P5-05 | `PromptBuilder`, grounded prompt, escaping, citation and highlight policy, `RagService`, `indexReadyStage`; plain service removed               | #48, #49 |
 | P5-06 | Citations under the real CSP: hostile text, fabricated markers, unsafe links, mobile viewer (no component change was needed)                    | #50      |
-| P5-07 | Eval gate and CLI, promote / rollback / prune with a randomized safety test, runbooks. **No candidate has been promoted**                       | #51      |
+| P5-07 | Eval gate and CLI, promote / rollback / prune with a randomized safety test, runbooks. first index promoted 2026-10-05, rollback drill passed   | #51      |
 
 Design: [ADR-053](../adr/adr-053.md) and [ADR-054](../adr/adr-054.md). Operations: [index-lifecycle.md](../operations/index-lifecycle.md) and [phase-5-finish.md](../operations/phase-5-finish.md).
 
@@ -69,7 +69,9 @@ Design: [ADR-053](../adr/adr-053.md) and [ADR-054](../adr/adr-054.md). Operation
 - `TagResource` and `ListTagsForResource` are not in AWS's S3 Vectors action table, so they are granted on the bucket and its indexes; the first real ingestion confirms it.
 - The cosine distance formula (`1 - similarity`) is assumed; `s3-vectors.live.test.ts` pins it when run with `S3VECTORS_LIVE=1`.
 - Only the question is embedded, so a follow-up that depends on earlier turns retrieves poorly (Phase 6 evals).
-- Until an index is promoted, chat answers 503 before the bot check (`active_index` is `none`).
+- Chat answers 503 before the bot check whenever `active_index` is `none`.
+- The first real ingestion confirmed that `TagResource` and `ListTagsForResource` work as granted.
+- One golden case (`current-role`, "Where does Daniel work now…") counts as a miss: the FAQ chunk "What is Daniel doing now?" ranks first and does state his CORAE role, but the case accepts only the CORAE experience file, and that file's overview chunk is not in the top 8. The golden set was not changed after seeing the result; whether to accept the FAQ as a source or reword the CORAE text is the owner's call.
 
 ## Risks and spikes
 
@@ -83,11 +85,11 @@ Mitigations and evidence live in [Spikes and Risks](https://app.notion.com/p/9f1
 
 ## Exit checklist
 
-- [ ] Exit criteria above met
+- [ ] Exit criteria above met: the index is built, gated, promoted and rolled back, and the window smoke passed; **a grounded, cited answer in a real browser is still to be confirmed by the owner**
 - [x] Lint, typecheck, formatting, and Vitest green in CI (every Phase 5 pull request; 730 root/API tests, 177 Angular tests, 35 browser tests locally)
 - [x] Terraform fmt/validate/plan and Checkov green in CI on #46 (the apply itself is an owner step)
-- [ ] Phase-specific acceptance, cost, and security checks recorded
-- [ ] Post-deploy smoke passed, or "endpoint smoke not applicable" recorded
+- [ ] Phase-specific acceptance, cost, and security checks recorded (acceptance and security below; the 24-hour cost figure is still to come)
+- [x] Post-deploy smoke passed (chat off, and the bounded window)
 - [x] No secrets, private contact details, or confidential knowledge committed (no knowledge file exists yet; the safety gate runs in CI over `knowledge/`)
 - [ ] ADR and risk changes mirrored in Notion and `docs/`
 - [ ] PR merged into `dev`, tagged `phase-5-complete`, Notion phase set to Done
@@ -95,7 +97,14 @@ Mitigations and evidence live in [Spikes and Risks](https://app.notion.com/p/9f1
 ## Evidence
 
 - PRs into the phase branch: #43 to #51 (#44, #46, #50 and #43 first; #45, #47, #48, #49, #51 after retargeting). Each was green on `typescript`, `terraform`, `checkov`, `plan`, and `browser-smoke` before merging. Consolidated PR into `dev`: see the pull request list.
-- Not recorded yet (owner steps): the AWS applies, ingestion and its no-op re-run, the gate report, promotion, the rollback drill, the bounded chat window, the 24-hour cost figure, and sign-off.
+- Consolidated PR into `dev`: #52 (merge `58d7f0c`); corpus and evidence: #53 (merge `039509c`). CI infrastructure note: GitHub Actions was partially degraded on 2026-10-05, so several jobs were cancelled with no runner assigned; they passed on re-run, and no check was skipped or forced.
+- Applied from `dev` at `58d7f0c` with the MFA operator role. Bootstrap: 1 changed (the plan role's read policy), then no changes. Stack: 5 added and 5 changed, 0 destroyed (vector bucket, ingest and eval roles and policies; API policy, Lambda version and alias, budget-action roles); the guard reported no violations, the bundle hash `2d555896…` equalled CI's, and a second plan reported no changes.
+- Kill switch (simulator): the budget-action role may attach and detach the deny policy on `portfolio-v2-prod-api`, `-ingest` and `-eval`; it is implicitly denied on the operator role, the CI plan role, and for any other policy.
+- Ingest (as the ingest role): dry run, then `--apply` created `chunks-351064a707096da2` (9 files, 34 chunks, 34 embedding calls, estimated $0.00005); a second `--apply` was a no-op with 0 embedding calls.
+- Gate (as the eval role, 20 golden questions, real Titan, S3 Vectors, Haiku): hit@5 0.923 (12 of 13), off-topic abstention 1.0, injection leaks 0, valid citations 1.0, largest billed prompt 690 tokens. Passed on thresholds fixed before the run. Reports in `evals/reports/`, manifests in `evals/indexes/`.
+- Promotion and rollback drill (chat off): promoted `chunks-351064a7…`, built and gated a salted second index `chunks-ec11aefd…`, promoted it, rolled back (`status` showed the first index active and the second as the previous one), `eval --smoke` ran against the restored index, and `prune` reported nothing to delete.
+- Smoke: chat off, every check passed; bounded window (`chat_enabled` true, then false, read back), `smoke-edge.ts --window` passed all five checks (forged and missing passes refused, a bogus Turnstile token refused by Cloudflare, uncached JSON, malformed body 400).
+- Not recorded yet: the owner's browser check on desktop and phone (grounded answer with working citations and viewer, off-topic abstention, injection attempt, the quota counter text and Stop button), the 24-hour Cost Explorer figure for Titan, Haiku and S3 Vectors, the live cosine test (`S3VECTORS_LIVE=1`), the Notion mirror, and sign-off.
 - Tag: `phase-5-complete`
 - CI run:
 - Deployment/smoke:
