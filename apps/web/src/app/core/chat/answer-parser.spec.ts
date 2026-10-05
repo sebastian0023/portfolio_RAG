@@ -53,11 +53,11 @@ describe('parseAnswer', () => {
   });
 
   it('only treats purely numeric brackets as markers', () => {
-    const [block] = parseAnswer('[Name] studies [year] [1]', {
+    const [block] = parseAnswer('Daniel studies [year] [1]', {
       citeable: cite,
     });
     expect(block?.segments.filter((s) => s.kind === 'cite')).toHaveLength(1);
-    expect(plainAnswer([block!])).toBe('[Name] studies [year] [1]');
+    expect(plainAnswer([block!])).toBe('Daniel studies [year] [1]');
   });
 
   it('holds back an unfinished marker while streaming but not once done', () => {

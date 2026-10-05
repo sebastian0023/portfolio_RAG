@@ -61,9 +61,9 @@ export interface Scenario {
 }
 
 const LONG =
-  "Could you give me a detailed overview of [Name]'s experience with AWS, including which services were used in each project, what role [Name] played, how the infrastructure was deployed and monitored, what was learned along the way, and how that experience would translate to a cloud engineering internship on a small product team that ships weekly and owns its infrastructure end to end? I would also like to know about testing practices, code review habits, documentation, and debugging under pressure.";
+  "Could you give me a detailed overview of Daniel's experience with AWS, including which services were used in each project, what role Daniel played, how the infrastructure was deployed and monitored, what was learned along the way, and how that experience would translate to a cloud engineering internship on a small product team that ships weekly and owns its infrastructure end to end? I would also like to know about testing practices, code review habits, documentation, and debugging under pressure.";
 
-const NO_COVER_QUESTION = "What is [Name]'s favorite programming language?";
+const NO_COVER_QUESTION = "What is Daniel's favorite programming language?";
 
 class Builder {
   private id = 0;

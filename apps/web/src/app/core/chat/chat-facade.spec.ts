@@ -18,7 +18,7 @@ describe('ChatFacade: answer lifecycle', () => {
     const h = setup();
     expect(h.facade.phase()).toBe('idle');
 
-    void h.facade.send('What is [Name] studying?');
+    void h.facade.send('What is Daniel studying?');
     await flush();
     expect(h.facade.phase()).toBe('submitting');
     expect(h.facade.messages().map((m) => m.role)).toEqual([

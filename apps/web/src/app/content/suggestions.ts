@@ -1,11 +1,11 @@
 // Owner content slots (bracketed text is a placeholder the owner fills in). The mock backend keys
 // its canned answers on these exact strings.
-export const Q_STUDYING = 'What is [Name] studying?';
-export const Q_AWS = 'Which AWS services has [Name] used?';
-export const Q_PROJECT = 'Tell me about a project [Name] built';
-export const Q_BEST_AT = 'What is [Name] best at?';
-export const Q_INTERNSHIPS = 'Is [Name] open to internships?';
-export const Q_CONTACT = 'How can I contact [Name]?';
+export const Q_STUDYING = 'What is Daniel studying?';
+export const Q_AWS = 'Which AWS services has Daniel used?';
+export const Q_PROJECT = 'Tell me about a project Daniel built';
+export const Q_BEST_AT = 'What is Daniel best at?';
+export const Q_INTERNSHIPS = 'Is Daniel open to internships?';
+export const Q_CONTACT = 'How can I contact Daniel?';
 
 export const SUGGESTIONS: readonly string[] = [
   Q_STUDYING,

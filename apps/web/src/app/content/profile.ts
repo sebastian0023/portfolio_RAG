@@ -1,31 +1,30 @@
 import type { CardProfile } from '../ui/card/card.models';
 
-// Owner content slots. Every bracketed value is a placeholder, not a claim about the owner; the
-// only fixed fact is the one the design itself states (Systems Engineering at ITESO). Replace the
-// slots, drop `pending`, and the dev-only markers disappear.
-export const DISPLAY_NAME = '[Name]';
+// Owner content, from the owner's public CV. `pending` is only for slots still waiting on the owner; none are
+// left except where noted. Keep this in step with the knowledge base (knowledge/), which the chat answers from.
+export const DISPLAY_NAME = 'Daniel';
 
 export const PROFILE: CardProfile = {
-  name: { value: '[Your Name]', pending: true },
-  initials: '[AB]',
-  headline: { value: '[Software developer]', pending: true },
+  name: { value: 'Daniel Sebastian Macias Macias' },
+  initials: 'DM',
+  headline: { value: 'Software engineering intern, frontend' },
   availability: 'internships',
   facts: [
     {
       icon: 'mapPin',
       label: 'Location',
-      slot: { value: '[City, Region, Country]', pending: true },
+      slot: { value: 'Jalisco, Mexico' },
     },
     {
       icon: 'grad',
       label: 'Studies',
       prefix: 'Systems Engineering · ITESO · ',
-      slot: { value: '[expected graduation year]', pending: true },
+      slot: { value: 'expected 2027' },
     },
     {
       icon: 'target',
       label: 'Focus',
-      slot: { value: '[Software development]', pending: true },
+      slot: { value: 'Angular frontends and serverless AWS' },
     },
   ],
   links: [
@@ -34,46 +33,32 @@ export const PROFILE: CardProfile = {
       label: 'GitHub',
       icon: 'github',
       ariaLabel: `${DISPLAY_NAME} on GitHub, opens in a new tab`,
-      href: null,
+      href: 'https://github.com/sebastian0023',
     },
     {
       id: 'li',
       label: 'LinkedIn',
       icon: 'linkedin',
       ariaLabel: `${DISPLAY_NAME} on LinkedIn, opens in a new tab`,
-      href: null,
-    },
-    {
-      id: 'cv',
-      label: 'Résumé (PDF)',
-      icon: 'fileText',
-      ariaLabel: `${DISPLAY_NAME}'s résumé (PDF), opens in a new tab`,
-      href: null,
-    },
-    {
-      id: 'ct',
-      label: 'Contact',
-      icon: 'mail',
-      ariaLabel: `Contact page for ${DISPLAY_NAME}, opens in a new tab`,
-      href: null,
+      href: 'https://www.linkedin.com/in/daniel-sebastian-macias-macias-68217a354',
     },
   ],
   recent: [
     {
-      date: { value: '[Sep 2026]', pending: true },
-      prefix: 'Building ',
-      slot: { value: '[project name]', pending: true },
+      date: { value: 'Oct 2026' },
+      prefix: 'Built ',
+      slot: { value: 'this portfolio with a retrieval-augmented chat' },
     },
     {
-      date: { value: '[Aug 2026]', pending: true },
-      prefix: 'Learning ',
-      slot: { value: '[topic]', pending: true },
+      date: { value: '2026' },
+      prefix: 'Earned the ',
+      slot: { value: 'AWS Academy Cloud Foundations certification' },
     },
     {
-      date: { value: '[Jul 2026]', pending: true },
-      prefix: 'Shipped ',
-      slot: { value: '[thing]', pending: true },
+      date: { value: 'Jan 2026' },
+      prefix: 'Started as a frontend intern at ',
+      slot: { value: 'CORAE' },
     },
   ],
-  lastUpdated: { value: '[date]', pending: true },
+  lastUpdated: { value: 'Oct 2026' },
 };

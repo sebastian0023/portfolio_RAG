@@ -185,7 +185,7 @@ test('marks an answer interrupted when the stream breaks after it began', async 
 test('never reads the development query parameters', async ({ page }) => {
   await page.goto('/?scenario=outGuest&mock=hang');
   await expect(
-    page.getByRole('heading', { name: 'Ask about [Name]' }),
+    page.getByRole('heading', { name: 'Ask about Daniel' }),
   ).toBeVisible();
   await expect(page.getByText('Daily limit reached')).toHaveCount(0);
   await expect(page.getByText('No questions left today')).toHaveCount(0);
@@ -195,7 +195,7 @@ test('never reads the development query parameters', async ({ page }) => {
 test('offers no sign-in or account control anywhere', async ({ page }) => {
   await page.goto('/');
   await expect(
-    page.getByRole('heading', { name: 'Ask about [Name]' }),
+    page.getByRole('heading', { name: 'Ask about Daniel' }),
   ).toBeVisible();
   await expect(
     page.getByText(/sign[- ]?(in|out)|log ?in|account/i),
