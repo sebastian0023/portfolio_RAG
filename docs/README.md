@@ -11,4 +11,5 @@ The [Notion plan](https://app.notion.com/p/3efc9c3293d981c4ab1bcf5e2dad3d55) is 
 - [Model and vector-store verification](operations/model-probe.md): probe results, the Haiku blocker, S3 Vectors limits, and shared quotas (P1-01).
 - [Applying infrastructure](operations/apply-procedure.md): the manual, serialized apply procedure and why CI apply is disabled (P1-12).
 - [CloudFront OAC streaming spike](operations/oac-spike.md): what was built, the 14-case result, and the findings that change the design (P1-10, R-04).
+- [Finishing Phase 4](operations/phase-4-finish.md): the owner-only steps that remain (Turnstile widget, secrets, deploy, bounded chat window) and why.
 - [Spike and verification outcomes](operations/spike-outcomes.md): documented support versus proven in the account, with the gate for each open item (P1-14).
