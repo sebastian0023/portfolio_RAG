@@ -71,7 +71,7 @@ Design: [ADR-053](../adr/adr-053.md) and [ADR-054](../adr/adr-054.md). Operation
 - Only the question is embedded, so a follow-up that depends on earlier turns retrieves poorly (Phase 6 evals).
 - Chat answers 503 before the bot check whenever `active_index` is `none`.
 - The first real ingestion confirmed that `TagResource` and `ListTagsForResource` work as granted.
-- One golden case (`current-role`, "Where does Daniel work now…") counts as a miss: the FAQ chunk "What is Daniel doing now?" ranks first and does state his CORAE role, but the case accepts only the CORAE experience file, and that file's overview chunk is not in the top 8. The golden set was not changed after seeing the result; whether to accept the FAQ as a source or reword the CORAE text is the owner's call.
+- One golden case (`current-role`, "Where does Daniel work now…") counts as a miss: the FAQ chunk "What is Daniel doing now?" ranks first and does state his CORAE role, but the case accepts only the CORAE experience file, and that file's overview chunk is not in the top 8. The owner confirmed the FAQ and the CORAE file state the same fact (the owner works at CORAE), so on 2026-10-05, after seeing the result, the case was changed to accept `faq-general` as well as `exp-corae`. Both gate reports above were produced with the stricter original set; the next gate run uses the corrected one.
 
 ## Risks and spikes
 

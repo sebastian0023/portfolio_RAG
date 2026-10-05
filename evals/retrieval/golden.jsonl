@@ -1,4 +1,4 @@
-{"id":"current-role","kind":"answerable","question":"Where does Daniel work now and what does he do there?","expectedSourceIds":["exp-corae"]}
+{"id":"current-role","kind":"answerable","question":"Where does Daniel work now and what does he do there?","expectedSourceIds":["exp-corae","faq-general"]}
 {"id":"corae-platform","kind":"answerable","question":"What did Daniel build with Angular and NgRx at CORAE?","expectedSourceIds":["exp-corae"]}
 {"id":"freelance","kind":"answerable","question":"What freelance work has Daniel done?","expectedSourceIds":["exp-freelance"]}
 {"id":"image-accuracy","kind":"answerable","question":"How accurate was the image classification model and how was it trained?","expectedSourceIds":["proj-image-classification"]}
