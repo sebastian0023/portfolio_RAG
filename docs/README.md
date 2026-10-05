@@ -12,4 +12,6 @@ The [Notion plan](https://app.notion.com/p/3efc9c3293d981c4ab1bcf5e2dad3d55) is 
 - [Applying infrastructure](operations/apply-procedure.md): the manual, serialized apply procedure and why CI apply is disabled (P1-12).
 - [CloudFront OAC streaming spike](operations/oac-spike.md): what was built, the 14-case result, and the findings that change the design (P1-10, R-04).
 - [Finishing Phase 4](operations/phase-4-finish.md): the owner-only steps that remain (Turnstile widget, secrets, deploy, bounded chat window) and why.
+- [Index lifecycle](operations/index-lifecycle.md): ingest, quality gate, promote, roll back, and prune retrieval indexes (P5-04, P5-07, R-16).
+- [Finishing Phase 5](operations/phase-5-finish.md): the owner-only steps (corpus, applies, ingest, gate, promotion, rollback drill, chat window).
 - [Spike and verification outcomes](operations/spike-outcomes.md): documented support versus proven in the account, with the gate for each open item (P1-14).
