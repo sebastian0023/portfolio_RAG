@@ -12,6 +12,9 @@ export type {
   IndexRepository,
   IndexQuery,
   IndexMatch,
+  IndexFilter,
+  IndexErrorCode,
+  IndexQueryResult,
   Citation,
 } from './index-repository.js';
 export {
