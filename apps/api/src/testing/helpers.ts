@@ -10,6 +10,7 @@ import type {
   AdmissionContext,
   AdmissionStage,
 } from '../core/chat/admission.js';
+import { DEFAULT_INDEX } from './fake-retrieval.js';
 import { scriptedProvider } from './fake-llm-provider.js';
 
 interface Manifest {
@@ -31,7 +32,7 @@ export function rawConfig(
 ): Record<string, string> {
   return {
     chat_enabled: 'true',
-    active_index: 'none',
+    active_index: DEFAULT_INDEX,
     llm_config: JSON.stringify(defaults('llm_config')),
     limits: JSON.stringify(defaults('limits')),
     ...overrides,

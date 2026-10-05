@@ -15,6 +15,7 @@ import { InMemoryCounterStore } from '../../testing/in-memory-counter-store.js';
 import {
   chatEnabledStage,
   guestQuotaStage,
+  indexReadyStage,
   preAuthRateStage,
   trustedIpStage,
 } from './stages.js';
@@ -49,6 +50,7 @@ function chain(
       preAuthRateStage(store, () => NOW),
     ),
     spy('chatEnabled', chatEnabledStage),
+    spy('indexReady', indexReadyStage),
     spy('provider', providerStage(registry())),
     spy(
       'guestQuota',
@@ -85,9 +87,32 @@ describe('admission stages (ADR-016, ADR-017)', () => {
       'trustedIp',
       'rate',
       'chatEnabled',
+      'indexReady',
       'provider',
       'guestQuota',
     ]);
+  });
+
+  test('refuses while no index is active, before the provider and without spending the quota', async () => {
+    const store = new InMemoryCounterStore();
+    const { stages, calls } = chain(store, rawConfig({ active_index: 'none' }));
+    const ctx = viewer();
+    expect(await runAdmission(stages, ctx)).toMatchObject({
+      code: 'unavailable',
+      status: 503,
+    });
+    expect(calls).toEqual([
+      'contentType',
+      'byteCap',
+      'schema',
+      'config',
+      'trustedIp',
+      'rate',
+      'chatEnabled',
+      'indexReady',
+    ]);
+    expect(ctx.provider).toBeUndefined();
+    expect(ctx.quota).toBeUndefined();
   });
 
   test('refuses when the viewer address is missing or ambiguous, without touching a counter', async () => {

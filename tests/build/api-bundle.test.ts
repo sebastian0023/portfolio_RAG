@@ -36,6 +36,7 @@ describe('API Lambda bundle', () => {
       APP_ENV: 'production',
       PARAMETER_PREFIX: '/portfolio-v2/prod',
       COUNTERS_TABLE: 'portfolio-v2-prod-counters',
+      VECTOR_BUCKET: 'portfolio-v2-prod-vectors',
       AWS_REGION: 'us-east-1',
     };
     const saved = Object.fromEntries(
