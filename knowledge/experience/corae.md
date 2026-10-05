@@ -4,7 +4,7 @@ title: Software Engineering Intern at CORAE
 kind: experience
 lang: en
 updated: 2026-10-05
-reviewed: false
+reviewed: true
 ---
 
 Daniel Sebastian Macias Macias has been a Software Engineering Intern on the frontend at CORAE since January 2026.

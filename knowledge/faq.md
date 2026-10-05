@@ -4,7 +4,7 @@ title: About Daniel and frequently asked questions
 kind: faq
 lang: en
 updated: 2026-10-05
-reviewed: false
+reviewed: true
 ---
 
 ## Who is Daniel?

@@ -4,7 +4,7 @@ title: Education and certifications
 kind: education
 lang: en
 updated: 2026-10-05
-reviewed: false
+reviewed: true
 ---
 
 ## University

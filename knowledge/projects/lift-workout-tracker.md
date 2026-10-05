@@ -4,7 +4,7 @@ title: Lift, Workout Tracking PWA
 kind: project
 lang: en
 updated: 2026-10-05
-reviewed: false
+reviewed: true
 ---
 
 Lift is a full-stack workout tracking progressive web app. It is mobile-first, has a warm monochrome look with a light theme by default and a dark option, and is built with React, TypeScript, Vite, Tailwind CSS, AWS Lambda, DynamoDB, Cognito, SQS, Bedrock, and Terraform. The source repository is private.

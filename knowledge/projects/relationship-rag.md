@@ -5,7 +5,7 @@ kind: project
 lang: en
 updated: 2026-10-05
 url: https://github.com/sebastian0023/relationship-rag
-reviewed: false
+reviewed: true
 ---
 
 Relationship RAG is a full-stack AI application built with Angular, TypeScript, AWS CDK, Lambda, DynamoDB, S3, Amazon Bedrock, SQS, and EventBridge. It is a private web app for two invited users, so it has no public demo.

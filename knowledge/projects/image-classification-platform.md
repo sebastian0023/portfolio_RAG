@@ -4,7 +4,7 @@ title: Image Classification Platform
 kind: project
 lang: en
 updated: 2026-10-05
-reviewed: false
+reviewed: true
 ---
 
 The Image Classification Platform is a project where Daniel was the project manager. It was built with Python, PyTorch, FastAPI, React, TypeScript, MLflow, DVC, and AWS S3.

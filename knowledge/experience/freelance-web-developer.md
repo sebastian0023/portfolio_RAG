@@ -4,7 +4,7 @@ title: Freelance Web Developer
 kind: experience
 lang: en
 updated: 2026-10-05
-reviewed: false
+reviewed: true
 ---
 
 Daniel worked as a self-employed freelance web developer from 2025 to 2026.

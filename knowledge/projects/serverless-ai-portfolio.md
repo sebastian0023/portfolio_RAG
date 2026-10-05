@@ -4,7 +4,7 @@ title: Serverless AI Portfolio with RAG Chat
 kind: project
 lang: en
 updated: 2026-10-05
-reviewed: false
+reviewed: true
 ---
 
 This portfolio website is itself one of Daniel's projects. It is built with Angular, TypeScript, AWS, and Terraform. The source repository is private.
