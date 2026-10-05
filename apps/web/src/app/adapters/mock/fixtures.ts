@@ -65,7 +65,7 @@ export const SOURCES: Readonly<Record<number, SourceCitation>> = {
     '[Sep 12, 2026]',
     [
       {
-        text: '[Name] studies Systems Engineering at ITESO in Jalisco, Mexico. ',
+        text: 'Daniel studies Systems Engineering at ITESO in Jalisco, Mexico. ',
         cited: true,
       },
       { text: 'Coursework includes [course], [course], and [course]. ' },
@@ -81,7 +81,7 @@ export const SOURCES: Readonly<Record<number, SourceCitation>> = {
     'knowledge/skills.md',
     '[Sep 12, 2026]',
     [
-      { text: '[Name] focuses on software development. ', cited: true },
+      { text: 'Daniel focuses on software development. ', cited: true },
       {
         text: 'Day-to-day tools include [language], [framework], and [tool]. ',
       },
@@ -102,7 +102,7 @@ export const SOURCES: Readonly<Record<number, SourceCitation>> = {
         text: 'It runs on AWS using [service], [service], and [service]. ',
         cited: true,
       },
-      { text: "[Name]'s role: [role]." },
+      { text: "Daniel's role: [role]." },
     ],
     true,
   ),
@@ -115,11 +115,11 @@ export const SOURCES: Readonly<Record<number, SourceCitation>> = {
     '[Sep 1, 2026]',
     [
       {
-        text: 'The preferred way to reach [Name] is the public contact page. ',
+        text: 'The preferred way to reach Daniel is the public contact page. ',
         cited: true,
       },
       {
-        text: '[Name] does not share a phone number or street address.',
+        text: 'Daniel does not share a phone number or street address.',
         cited: true,
       },
     ],
@@ -134,7 +134,7 @@ export const SOURCES: Readonly<Record<number, SourceCitation>> = {
     '[Sep 20, 2026]',
     [
       {
-        text: '[Name] is open to internships starting [month year]. ',
+        text: 'Daniel is open to internships starting [month year]. ',
         cited: true,
       },
       {
@@ -156,11 +156,11 @@ export interface CannedAnswer {
 
 export const ANSWERS: Readonly<Record<string, CannedAnswer>> = {
   [Q_STUDYING]: {
-    text: '[Name] is studying Systems Engineering at ITESO in Jalisco, Mexico [1], with a focus on software development [2]. [Name] expects to graduate in [year] [1].',
+    text: 'Daniel is studying Systems Engineering at ITESO in Jalisco, Mexico [1], with a focus on software development [2]. Daniel expects to graduate in [year] [1].',
     sources: [1, 2],
   },
   [Q_AWS]: {
-    text: '[Name] has worked with [service], [service], and [service] in [project name] [3], and is currently learning [service] for [goal] [2].',
+    text: 'Daniel has worked with [service], [service], and [service] in [project name] [3], and is currently learning [service] for [goal] [2].',
     sources: [3, 2],
   },
   [Q_PROJECT]: {
@@ -168,22 +168,22 @@ export const ANSWERS: Readonly<Record<string, CannedAnswer>> = {
     sources: [3],
   },
   [Q_BEST_AT]: {
-    text: "According to the reviewed sources, [Name]'s strongest areas are **software development** and **[second strength]** [2]. Day-to-day tools include [language], [framework], and [tool] [2][6].",
+    text: "According to the reviewed sources, Daniel's strongest areas are **software development** and **[second strength]** [2]. Day-to-day tools include [language], [framework], and [tool] [2][6].",
     sources: [2],
     extraCited: [6],
   },
   [Q_INTERNSHIPS]: {
-    text: 'Yes. [Name] is open to internships starting [month year] [5], preferably [remote / hybrid / on-site] in [city] [5].',
+    text: 'Yes. Daniel is open to internships starting [month year] [5], preferably [remote / hybrid / on-site] in [city] [5].',
     sources: [5],
   },
   [Q_CONTACT]: {
-    text: 'The best way to reach [Name] is the public contact page linked in the card [4]. [Name] does not share a phone number or street address [4].',
+    text: 'The best way to reach Daniel is the public contact page linked in the card [4]. Daniel does not share a phone number or street address [4].',
     sources: [4],
   },
 };
 
 export const NO_COVERAGE_TEXT =
-  "[Name]'s public sources don't cover that yet. You could try one of these related questions:";
+  "Daniel's public sources don't cover that yet. You could try one of these related questions:";
 
 export function answerFor(question: string): CannedAnswer | null {
   return ANSWERS[question] ?? null;

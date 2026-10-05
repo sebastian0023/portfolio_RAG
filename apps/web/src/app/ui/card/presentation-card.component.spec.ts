@@ -1,14 +1,91 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { PROFILE } from '../../content/profile';
+import type { CardProfile } from './card.models';
 import { PresentationCardComponent } from './presentation-card.component';
+
+// The card's placeholder behavior (dashed markers, inert links) is tested against a template profile, not the
+// live content, so filling in the owner's real details never breaks these component tests.
+const TEMPLATE_PROFILE: CardProfile = {
+  name: { value: '[Your Name]', pending: true },
+  initials: '[AB]',
+  headline: { value: '[Software developer]', pending: true },
+  availability: 'internships',
+  facts: [
+    {
+      icon: 'mapPin',
+      label: 'Location',
+      slot: { value: '[City, Region, Country]', pending: true },
+    },
+    {
+      icon: 'grad',
+      label: 'Studies',
+      prefix: 'Systems Engineering · ITESO · ',
+      slot: { value: '[expected graduation year]', pending: true },
+    },
+    {
+      icon: 'target',
+      label: 'Focus',
+      slot: { value: '[Software development]', pending: true },
+    },
+  ],
+  links: [
+    {
+      id: 'gh',
+      label: 'GitHub',
+      icon: 'github',
+      ariaLabel: `Daniel on GitHub, opens in a new tab`,
+      href: null,
+    },
+    {
+      id: 'li',
+      label: 'LinkedIn',
+      icon: 'linkedin',
+      ariaLabel: `Daniel on LinkedIn, opens in a new tab`,
+      href: null,
+    },
+    {
+      id: 'cv',
+      label: 'Résumé (PDF)',
+      icon: 'fileText',
+      ariaLabel: `Daniel's résumé (PDF), opens in a new tab`,
+      href: null,
+    },
+    {
+      id: 'ct',
+      label: 'Contact',
+      icon: 'mail',
+      ariaLabel: `Contact page for Daniel, opens in a new tab`,
+      href: null,
+    },
+  ],
+  recent: [
+    {
+      date: { value: '[Sep 2026]', pending: true },
+      prefix: 'Building ',
+      slot: { value: '[project name]', pending: true },
+    },
+    {
+      date: { value: '[Aug 2026]', pending: true },
+      prefix: 'Learning ',
+      slot: { value: '[topic]', pending: true },
+    },
+    {
+      date: { value: '[Jul 2026]', pending: true },
+      prefix: 'Shipped ',
+      slot: { value: '[thing]', pending: true },
+    },
+  ],
+  lastUpdated: { value: '[date]', pending: true },
+};
 
 function render(options: {
   variant: 'aside' | 'compact';
   markers?: boolean;
+  profile?: CardProfile;
 }): ComponentFixture<PresentationCardComponent> {
   const fixture = TestBed.createComponent(PresentationCardComponent);
-  fixture.componentRef.setInput('profile', PROFILE);
+  fixture.componentRef.setInput('profile', options.profile ?? TEMPLATE_PROFILE);
   fixture.componentRef.setInput('variant', options.variant);
   fixture.componentRef.setInput('markers', options.markers ?? false);
   fixture.detectChanges();
@@ -21,6 +98,27 @@ const text = (f: ComponentFixture<unknown>): string =>
   root(f).textContent ?? '';
 
 beforeEach(() => TestBed.resetTestingModule());
+
+describe('the live profile', () => {
+  it('has no placeholder, pending slot, or dead link', () => {
+    const json = JSON.stringify(PROFILE);
+    expect(json).not.toMatch(/\[[A-Za-z][^\]"]*\]/);
+    expect(json).not.toContain('"pending"');
+    for (const link of PROFILE.links) {
+      expect(link.href, link.id).toMatch(/^https:\/\//);
+    }
+  });
+
+  it('renders the owner name and real links', () => {
+    const f = render({ variant: 'aside', profile: PROFILE });
+    expect(text(f)).toContain('Daniel Sebastian Macias Macias');
+    expect(text(f)).not.toMatch(/\[[^\]]+\]/);
+    const hrefs = Array.from(
+      root(f).querySelectorAll<HTMLAnchorElement>('nav a'),
+    ).map((a) => a.getAttribute('href'));
+    expect(hrefs).toEqual(PROFILE.links.map((l) => l.href));
+  });
+});
 
 describe('PresentationCardComponent', () => {
   it('shows the owner placeholders as plain text without markers in a clean build', () => {
@@ -52,10 +150,10 @@ describe('PresentationCardComponent', () => {
       root(f).querySelectorAll<HTMLAnchorElement>('nav a'),
     );
     expect(links.map((a) => a.getAttribute('aria-label'))).toEqual([
-      '[Name] on GitHub, opens in a new tab',
-      '[Name] on LinkedIn, opens in a new tab',
-      "[Name]'s résumé (PDF), opens in a new tab",
-      'Contact page for [Name], opens in a new tab',
+      'Daniel on GitHub, opens in a new tab',
+      'Daniel on LinkedIn, opens in a new tab',
+      "Daniel's résumé (PDF), opens in a new tab",
+      'Contact page for Daniel, opens in a new tab',
     ]);
     for (const a of links) {
       expect(a.target).toBe('_blank');

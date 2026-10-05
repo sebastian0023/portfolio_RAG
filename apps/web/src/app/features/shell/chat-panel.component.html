@@ -8,7 +8,7 @@
   <header class="chat-head">
     <div>
       <p class="eyebrow">PORTFOLIO ASSISTANT</p>
-      <h2 id="chat-title">Ask about [Name]</h2>
+      <h2 id="chat-title">Ask about Daniel</h2>
       <p class="subtitle">
         Explore projects, skills, and experience with cited answers.
       </p>
@@ -33,7 +33,7 @@
       <div class="empty">
         <div class="empty-mark" aria-hidden="true">✦</div>
         <h3>What would you like to know?</h3>
-        <p>Ask about [Name]'s background, work, or current interests.</p>
+        <p>Ask about Daniel's background, work, or current interests.</p>
         <div class="suggestions" aria-label="Suggested questions">
           @for (
             question of facade.chatEnabled()
@@ -210,7 +210,7 @@
       [disabled]="composer().textareaDisabled"
       [attr.aria-invalid]="composer().overLimit"
       aria-describedby="composer-help composer-count"
-      placeholder="Ask a question about [Name]…"
+      placeholder="Ask a question about Daniel…"
       (input)="onInput($event)"
       (keydown)="onKeydown($event)"
     ></textarea>

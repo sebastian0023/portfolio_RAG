@@ -6,9 +6,9 @@ test('a visitor can ask a mocked question, inspect a source, and use the keyboar
 }) => {
   await page.goto('/?scenario=empty');
   await expect(
-    page.getByRole('heading', { name: 'Ask about [Name]' }),
+    page.getByRole('heading', { name: 'Ask about Daniel' }),
   ).toBeVisible();
-  await page.getByRole('button', { name: 'What is [Name] studying?' }).click();
+  await page.getByRole('button', { name: 'What is Daniel studying?' }).click();
   await expect(
     page
       .getByRole('status')
@@ -28,7 +28,7 @@ test('a visitor can ask a mocked question, inspect a source, and use the keyboar
   ).toBeVisible();
   await page
     .getByLabel('Your question')
-    .fill('Tell me about a project [Name] built');
+    .fill('Tell me about a project Daniel built');
   await page.getByLabel('Your question').press('Enter');
   await expect(page.getByText('8 of 10 questions left today')).toBeVisible();
 });
@@ -59,7 +59,7 @@ test('a streaming answer can be stopped and an error is explained', async ({
   page,
 }) => {
   await page.goto('/?scenario=empty&mock=hang');
-  await page.getByRole('button', { name: 'What is [Name] studying?' }).click();
+  await page.getByRole('button', { name: 'What is Daniel studying?' }).click();
   await expect(
     page.locator('.assistant-message[data-status="thinking"]'),
   ).toBeVisible();
@@ -69,7 +69,7 @@ test('a streaming answer can be stopped and an error is explained', async ({
   ).toBeVisible();
 
   await page.goto('/?scenario=empty&mock=error:unavailable');
-  await page.getByRole('button', { name: 'What is [Name] studying?' }).click();
+  await page.getByRole('button', { name: 'What is Daniel studying?' }).click();
   await expect(
     page
       .getByText('The assistant is unavailable right now.', { exact: false })

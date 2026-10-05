@@ -15,7 +15,7 @@ import { RecentTimelineComponent } from './recent-timeline.component';
 import { SlotComponent } from './slot.component';
 
 // 'aside' is the desktop column; 'compact' sits above the chat on tablet and phone and keeps the
-// remaining details behind "More about [Name]".
+// remaining details behind "More about Daniel".
 @Component({
   selector: 'app-presentation-card',
   changeDetection: ChangeDetectionStrategy.OnPush,

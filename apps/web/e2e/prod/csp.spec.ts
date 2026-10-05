@@ -99,7 +99,7 @@ test('accessibility still passes in the production bundle', async ({
 }) => {
   await page.goto('/');
   await expect(
-    page.getByRole('heading', { name: 'Ask about [Name]' }),
+    page.getByRole('heading', { name: 'Ask about Daniel' }),
   ).toBeVisible();
   const results = await new AxeBuilder({ page }).analyze();
   expect(results.violations).toEqual([]);
