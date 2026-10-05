@@ -49,3 +49,13 @@ variable "reserved_concurrency" {
   type        = number
   default     = 5
 }
+
+variable "vector_bucket_name" {
+  description = "Vector bucket holding the retrieval indexes."
+  type        = string
+}
+
+variable "vector_index_arns" {
+  description = "Resource pattern for the indexes in that bucket, for example <bucket arn>/index/chunks-*."
+  type        = string
+}

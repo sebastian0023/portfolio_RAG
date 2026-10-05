@@ -1,6 +1,6 @@
 # Phase 5: RAG
 
-Status: Not started
+Status: In progress (plan approved 2026-10-04; PRs go into `phase/5-rag`).
 
 Branch: `phase/5-rag`
 
@@ -29,6 +29,25 @@ Acceptance criteria and owners live in the [Tasks database](https://app.notion.c
 | [P5-05](https://app.notion.com/p/3efc9c3293d9812ebca1da8e34af3b18) | Implement RagService template and PromptBuilder        | P1       | api   | P5-03, P5-04     |
 | [P5-06](https://app.notion.com/p/3efc9c3293d9813aaffee96058a6f2e3) | Render and verify citations end to end                 | P1       | web   | P5-05            |
 | [P5-07](https://app.notion.com/p/3efc9c3293d9815089cbd3d9c1053659) | Gate index promotion, rollback, and Phase 5 completion | P0       | evals | P5-06            |
+
+## Decisions
+
+Owner decisions: the owner supplies the source material and approves every knowledge file; English only (`lang` is still recorded); an optional per-file public `url`, https and host-allowlisted. Design: [ADR-053](../adr/adr-053.md) (ingestion and index lifecycle) and [ADR-054](../adr/adr-054.md) (retrieval, prompt, abstention, citations).
+
+## Pull requests (into `phase/5-rag`)
+
+| PR  | Branch                  | Closes                                |
+| --- | ----------------------- | ------------------------------------- |
+| 0   | `p5/plan-docs`          | ADRs, phase doc, authoring guide      |
+| 1   | `p5/knowledge-pipeline` | P5-02, tooling half of P5-01          |
+| 2   | `p5/index-repository`   | P5-03                                 |
+| 3   | `p5/vectors-infra`      | infra half of P5-04                   |
+| 4   | `p5/ingest-cli`         | app half of P5-04                     |
+| 5a  | `p5/prompt-builder`     | P5-05 (pure core)                     |
+| 5b  | `p5/rag-service`        | P5-05                                 |
+| 6   | `p5/citations-e2e`      | P5-06                                 |
+| 7   | `p5/index-lifecycle`    | P5-07 tooling                         |
+| 8   | `p5/knowledge-corpus`   | content of P5-01 (waits on the owner) |
 
 ## Risks and spikes
 

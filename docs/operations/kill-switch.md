@@ -50,7 +50,7 @@ Execution-role scope, checked with the IAM policy simulator: attach and detach o
 4. Verify with `aws iam list-attached-role-policies --role-name <role>`, wait about 15 seconds, and run one bounded call.
 5. Restore chat only after the bounded test passes. Record the previous attachment state, the time, and the reason.
 
-Other principals (the operator role, evaluation and ingestion roles) are not affected by this switch and need their own budget scope in Phases 5 and 6.
+The operator role is not affected by this switch. The ingestion and evaluation roles are targets from Phase 5 (see below); the operator role must therefore never run ingestion or evals directly.
 
 ## Phase 3: the API role is a target
 
@@ -58,3 +58,10 @@ Other principals (the operator role, evaluation and ingestion roles) are not aff
 
 1. Simulator check: the budget-action role may attach and detach the deny policy on `portfolio-v2-prod-api`, and is denied for the operator role and for any role outside the prefix.
 2. Drill during a smoke window: attach the deny policy to the API role by hand, send one message, expect `unavailable` within about 15 seconds, detach, and expect answers again. Record the timings next to the table above.
+
+## Phase 5: the ingest and eval roles are targets
+
+`portfolio-v2-prod-ingest` (embeds the corpus and fills candidate indexes) and `portfolio-v2-prod-eval` (runs the real answer path against a candidate) are targets, so the budget action attaches the same deny policy to them and Titan embedding calls stop with the rest of the model spend (R-14). The CLI tools check the caller's STS identity and refuse to run under any other role, so using the operator role cannot bypass the switch. To be recorded in the Phase 5 evidence once applied:
+
+1. Simulator check: the budget-action role may attach and detach the deny policy on `portfolio-v2-prod-api`, `-ingest`, and `-eval`, and is denied for the operator role and for any role outside the prefix.
+2. Drill: attach the deny policy to the ingest role by hand, run a dry-run-free `ingest --apply` on a tiny corpus, expect an `unavailable` style failure with nothing written as complete, detach, and expect it to work again.

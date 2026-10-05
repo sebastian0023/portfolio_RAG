@@ -197,6 +197,13 @@ data "aws_iam_policy_document" "plan" {
     resources = ["arn:aws:logs:*:${var.account_id}:log-group:/aws/lambda/portfolio-v2-*"]
   }
 
+  # Terraform reads the vector bucket and its tags on every refresh. Indexes are not Terraform resources.
+  statement {
+    sid       = "S3VectorsBucketRead"
+    actions   = ["s3vectors:GetVectorBucket", "s3vectors:ListTagsForResource"]
+    resources = ["arn:aws:s3vectors:*:${var.account_id}:bucket/portfolio-v2-*"]
+  }
+
   statement {
     sid       = "BedrockInferenceProfileRead"
     actions   = ["bedrock:GetInferenceProfile"]
