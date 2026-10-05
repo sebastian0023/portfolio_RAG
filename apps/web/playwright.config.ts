@@ -27,6 +27,12 @@ export default defineConfig({
       testMatch: '**/prod/**/*.spec.ts',
       use: { ...devices['Desktop Chrome'], baseURL: prodUrl },
     },
+    // The citations spec again on a phone: the source viewer must be usable at mobile width (P5-06).
+    {
+      name: 'prod-mobile',
+      testMatch: '**/prod/citations.spec.ts',
+      use: { ...devices['Pixel 7'], baseURL: prodUrl },
+    },
   ],
   webServer: [
     {
