@@ -30,6 +30,8 @@ export default tseslint.config(
         },
       },
       'boundaries/elements': [
+        // Operator CLIs are their own composition roots (ADR-043). Listed before 'api' so the first match wins.
+        { type: 'api-cli', pattern: 'apps/api/src/cli/**' },
         { type: 'api-core', pattern: 'apps/api/src/core/**' },
         { type: 'api-adapter', pattern: 'apps/api/src/adapters/**' },
         { type: 'api', pattern: 'apps/api/**' },
@@ -58,7 +60,13 @@ export default tseslint.config(
                 to: {
                   element: {
                     types: {
-                      anyOf: [...WEB_TYPES, 'api', 'api-core', 'api-adapter'],
+                      anyOf: [
+                        ...WEB_TYPES,
+                        'api',
+                        'api-core',
+                        'api-adapter',
+                        'api-cli',
+                      ],
                     },
                   },
                 },
@@ -69,7 +77,9 @@ export default tseslint.config(
               disallow: {
                 to: {
                   element: {
-                    types: { anyOf: ['api', 'api-core', 'api-adapter'] },
+                    types: {
+                      anyOf: ['api', 'api-core', 'api-adapter', 'api-cli'],
+                    },
                   },
                 },
               },
@@ -77,10 +87,21 @@ export default tseslint.config(
             {
               from: {
                 element: {
-                  types: { anyOf: ['api', 'api-core', 'api-adapter'] },
+                  types: {
+                    anyOf: ['api', 'api-core', 'api-adapter', 'api-cli'],
+                  },
                 },
               },
               disallow: { to: { element: { types: { anyOf: WEB_TYPES } } } },
+            },
+            // The Lambda, its adapters, and core never import an operator CLI.
+            {
+              from: {
+                element: {
+                  types: { anyOf: ['api', 'api-core', 'api-adapter'] },
+                },
+              },
+              disallow: { to: { element: { type: 'api-cli' } } },
             },
             // Only the composition root (app.config.ts, in the catch-all 'web') imports adapters.
             {

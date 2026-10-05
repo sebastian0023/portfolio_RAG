@@ -2,6 +2,7 @@ import { chunkDocument, type Chunk } from './chunker.js';
 import { checkMetadataLimits, toVectorMetadata } from './metadata.js';
 import type { Finding } from './config.js';
 import { parseFrontmatter } from './frontmatter.js';
+import type { Configs } from './config.js';
 import { buildManifest, normalizeNewlines } from './manifest.js';
 import type { BuiltManifest, ManifestEntry } from './manifest.js';
 import { parseSections } from './markdown.js';
@@ -17,6 +18,7 @@ export interface CorpusOptions {
   readonly allowedHosts: readonly string[];
   readonly allowedEmails?: readonly string[];
   readonly now: number;
+  readonly configs?: Configs;
 }
 
 export type CorpusResult =
@@ -94,7 +96,7 @@ export function loadCorpus(
   if (findings.length > 0) return { ok: false, findings };
   return {
     ok: true,
-    built: buildManifest(entries),
+    built: buildManifest(entries, options.configs),
     chunks: entries.flatMap((entry) => entry.chunks),
   };
 }
