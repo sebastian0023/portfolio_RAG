@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { isAllowedSourceUrl } from './knowledge.js';
+import { ALLOWED_SOURCE_HOSTS, isAllowedSourceUrl } from './knowledge.js';
 
 const hosts = ['example.org', 'github.com'];
 
@@ -23,7 +23,18 @@ describe('isAllowedSourceUrl', () => {
     expect(isAllowedSourceUrl(value, hosts)).toBe(false);
   });
 
-  test('accepts nothing while the allowlist is empty', () => {
-    expect(isAllowedSourceUrl('https://example.org/a')).toBe(false);
+  test('the production allowlist is exactly the approved hosts', () => {
+    expect(ALLOWED_SOURCE_HOSTS).toEqual(['github.com']);
+    expect(
+      isAllowedSourceUrl('https://github.com/sebastian0023/relationship-rag'),
+    ).toBe(true);
+    for (const url of [
+      'https://example.org/a',
+      'https://gist.github.com/x',
+      'https://github.com.evil.net/x',
+      'http://github.com/x',
+    ]) {
+      expect(isAllowedSourceUrl(url), url).toBe(false);
+    }
   });
 });
