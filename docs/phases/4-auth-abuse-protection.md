@@ -1,6 +1,6 @@
 # Phase 4: Guest access and abuse protection
 
-Status: In progress. The code, tests, Terraform, and runbooks are complete on the phase branch. Nothing is applied or deployed yet; the owner-run steps below remain.
+Status: Complete (deployed and tested from `dev`). The Notion mirror and the 24-hour cost check remain.
 
 Branch: `phase/4-auth-abuse-protection` (the branch name keeps the original title)
 
@@ -53,35 +53,30 @@ Acceptance criteria and owners live in the [Tasks database](https://app.notion.c
 - [R-18](https://app.notion.com/p/3efc9c3293d981a7b47ce16e48765e34) — Secret values and rollback state leak through Terraform (Risk, High): placeholder plus `ignore_changes`; the owner sets the real values.
 - R-05 (Cognito pricing) and R-11 (social-only admin MFA): not applicable (ADR-051).
 
-## Owner-run steps
-
-Each follows [Applying infrastructure](../operations/apply-procedure.md) and needs the owner's explicit go-ahead.
-
-1. **Create the Turnstile widget** in the Cloudflare dashboard (Turnstile, Add widget): mode **Managed**, hostname the CloudFront domain (`terraform output site_url`, without `https://`). Keep the **sitekey** (public) and the **secret key**.
-2. **Put the sitekey in the build:** set `turnstileSiteKey` in `apps/web/src/environments/environment.ts` (a pull request). `deploy-web.ts` refuses to publish while it is empty.
-3. Merge the task pull requests into the phase branch in order.
-4. **Apply `infra/stack`.** The plan creates the two SecureStrings, updates `limits`, the budget, and the API role policy, and destroys nothing. Then set the real secret values (the runbook has the commands; `read -s` keeps them out of shell history).
-5. `deploy-web.ts`, then `smoke-edge.ts` (chat off).
-6. **One bounded window** (`chat_enabled` true): `smoke-edge.ts --window`; then in a real browser pass the bot check, ask a question, and watch the quota line count down from 10; close the window and verify `chat_enabled` is `false`.
-7. Phase pull request into `dev`; repeat the apply (no changes), deploy, and smoke from `dev`; tag `phase-4-complete`; mirror ADR-051 and ADR-052 and the risk updates in Notion.
-
 ## Exit checklist
 
-- [ ] Exit criteria above met (deployed from `dev`; a guest answered through the real bot check)
-- [x] Lint, typecheck, formatting, and Vitest green locally (398 root tests, 177 Angular tests, 23 browser tests). CI to confirm on each pull request.
-- [x] Terraform fmt and validate green locally, Checkov green locally (every skip justified). CI plan to confirm.
-- [ ] Phase-specific acceptance, cost, and security checks recorded (smoke runs, the browser journey, cost after 24 hours)
-- [ ] Post-deploy smoke passed
-- [x] No secrets, private contact details, or confidential knowledge committed (secret values exist only in SSM)
-- [ ] ADR and risk changes mirrored in Notion and `docs/` (ADR-051 and ADR-052 are in `docs/`; Notion mirror pending)
-- [ ] PR merged into `dev`, tagged `phase-4-complete`, Notion phase set to Done
+- [x] Exit criteria above met: a guest passed the real Turnstile check, asked questions, and was answered, deployed from `dev`
+- [x] Lint, typecheck, formatting, and Vitest green locally (422 root tests, 177 Angular tests, 23 browser tests) and in CI on every Phase 4 pull request
+- [x] Terraform fmt, validate, plan, the plan guard, and Checkov green in CI; a plan from `dev` after the apply reports no changes
+- [x] Phase-specific acceptance, cost, and security checks recorded below (the 24-hour cost figure is still to come)
+- [x] Post-deploy smoke passed (chat off, and the guest-pass window)
+- [x] No secrets, private contact details, or confidential knowledge committed (the secret values exist only in SSM)
+- [ ] ADR and risk changes mirrored in Notion (ADR-051, ADR-052, the ADR-049 update, R-05 and R-11 not applicable, R-18 addressed, P4-01, P4-02 and P4-05 cancelled). Owner or a session with Notion access.
+- [x] PRs merged into `dev` and tagged `phase-4-complete`
+- [ ] Notion phase set to Done (owner)
 
 ## Evidence
 
-- PR:
-- Tag: `phase-4-complete`
-- CI run:
-- Deployment/smoke:
-- Sign-off:
+- Task PRs into the phase branch: #32 to #38. Consolidated PR into `dev`: [#39](https://github.com/sebastian0023/portfolio_RAG/pull/39). Follow-ups: #40 (runbook), #41 (production Turnstile sitekey). Each was green on `typescript`, `terraform`, `checkov`, `plan`, and `browser-smoke` before merging.
+- Tag: [`phase-4-complete`](https://github.com/sebastian0023/portfolio_RAG/tree/phase-4-complete) on `687b6b9`, the `dev` merge commit that `version.json` names.
+- Applied from `dev` with the MFA operator role: 2 resources added (the two SecureString placeholders) and 6 changed (the Lambda version and `live` alias, the API role policy, the Bedrock budget at $15, the CSP header policy, `limits` at 10 and 50). The plan had no deletes or replaces and the guard reported no violations. The bundle hash from `dev` matched the one CI built. A follow-up plan reports no changes.
+- Web deploy: `deploy-web.ts` from `687b6b9` published 44 files and invalidated `/index.html` and `/version.json`; the sitekey is in the deployed bundle.
+- Smoke, chat off (from `dev`): every check passed, including the new CSP header, the guest-pass route (503 with chat off, 405 on OPTIONS with no CORS), the first 10 requests of a minute admitted and the 11th and 12th rate limited with `Retry-After`.
+- Secrets: both were set out of band after the apply (verified only as "not the placeholder"; values never printed).
+- Bounded chat window (one window, then `chat_enabled` set back to `false`): `smoke-edge.ts --window` passed all five checks: chat without a pass is 403, a forged pass is 403, a bogus Turnstile token is refused by Cloudflare (403, which also proves the API can decrypt and use both secrets), the guest-pass answer is uncached JSON, and a malformed body is 400. In a real browser the owner passed the bot check and got answers ("it works well"); the exact quota counter text and the Stop button were not recorded.
+- Window closed and verified: `chat_enabled` is `false`, the API role has no attached policies, the chat-off smoke passes again, and a plan reports no changes.
+- Earlier observation: the first window attempt failed because the secrets were still the placeholder; a bad deploy was not the cause. The runbook ([phase-4-finish.md](../operations/phase-4-finish.md)) now explains that case.
+- Not recorded: the cost after 24 hours (Cost Explorer by `CostScope`), the rollback rehearsal, and the browser counter text.
+- Sign-off: owner confirmed the browser test works on 2026-10-04.
 
 Sign-off and detailed results are tracked in the [Notion plan](https://app.notion.com/p/3efc9c3293d981c4ab1bcf5e2dad3d55).
