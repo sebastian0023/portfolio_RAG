@@ -34,6 +34,32 @@ export async function buildApiBundle(
   return resolve(outdir, BUNDLE_FILE);
 }
 
+// Operator CLIs (ADR-043: each is its own composition root). They are bundled apart from the Lambda so the
+// function never carries CLI-only code such as the STS client.
+export const CLI_ENTRIES = ['ingest'] as const;
+
+export async function buildCliBundles(
+  outdir = resolve(apiRoot, 'dist/cli'),
+): Promise<string[]> {
+  mkdirSync(outdir, { recursive: true });
+  await build({
+    absWorkingDir: apiRoot,
+    entryPoints: CLI_ENTRIES.map((name) => `src/cli/${name}.ts`),
+    outdir,
+    outExtension: { '.js': '.mjs' },
+    bundle: true,
+    platform: 'node',
+    format: 'esm',
+    target: 'node24',
+    legalComments: 'none',
+    minifySyntax: true,
+    minifyWhitespace: true,
+    banner: { js: BANNER },
+    logLevel: 'warning',
+  });
+  return CLI_ENTRIES.map((name) => resolve(outdir, `${name}.mjs`));
+}
+
 if (import.meta.main) {
   const file = await buildApiBundle();
   process.stdout.write(`${file}\n`);

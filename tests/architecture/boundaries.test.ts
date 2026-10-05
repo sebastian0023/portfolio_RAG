@@ -28,6 +28,7 @@ const SDK = 'no-restricted-imports';
 const targets: Record<string, string> = {
   'apps/api/src/core/ok-core.ts': 'export const core = 1;\n',
   'apps/api/src/adapters/adapter.ts': 'export const adapter = 1;\n',
+  'apps/api/src/cli/tool.ts': 'export const tool = 1;\n',
   'apps/api/src/testing/helper.ts': 'export const helper = 1;\n',
   'apps/web/src/web.ts': 'export const web = 1;\n',
   'apps/web/src/app/adapters/mock.ts': 'export const mock = 1;\n',
@@ -129,6 +130,31 @@ const cases: Record<string, [string, string | null]> = {
   ],
   'apps/api/src/core/bad-core-test-to-hono.test.ts': [
     "import { Hono } from 'hono';\nexport const x = Hono;\n",
+    SDK,
+  ],
+  // Operator CLIs are their own composition roots (ADR-043): nothing the Lambda ships may import one.
+  'apps/api/src/core/bad-core-to-cli.ts': [
+    "import { tool } from '../cli/tool.js';\nexport const x = tool;\n",
+    BOUNDARY,
+  ],
+  'apps/api/src/adapters/bad-adapter-to-cli.ts': [
+    "import { tool } from '../cli/tool.js';\nexport const x = tool;\n",
+    BOUNDARY,
+  ],
+  'apps/api/src/bad-lambda-to-cli.ts': [
+    "import { tool } from './cli/tool.js';\nexport const x = tool;\n",
+    BOUNDARY,
+  ],
+  'packages/shared/src/bad-shared-to-cli.ts': [
+    "import { tool } from '../../../apps/api/src/cli/tool.js';\nexport const x = tool;\n",
+    BOUNDARY,
+  ],
+  'apps/api/src/cli/ok-cli.ts': [
+    "import { SSMClient } from '@aws-sdk/client-ssm';\nimport { adapter } from '../adapters/adapter.js';\nimport { core } from '../core/ok-core.js';\nexport const x = [SSMClient, adapter, core];\n",
+    null,
+  ],
+  'apps/api/src/cli/bad-cli-to-testing.ts': [
+    "import { helper } from '../testing/helper.js';\nexport const x = helper;\n",
     SDK,
   ],
   'apps/api/src/lambda.ts': [
