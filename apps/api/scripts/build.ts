@@ -36,7 +36,7 @@ export async function buildApiBundle(
 
 // Operator CLIs (ADR-043: each is its own composition root). They are bundled apart from the Lambda so the
 // function never carries CLI-only code such as the STS client.
-export const CLI_ENTRIES = ['ingest'] as const;
+export const CLI_ENTRIES = ['ingest', 'eval-candidate'] as const;
 
 export async function buildCliBundles(
   outdir = resolve(apiRoot, 'dist/cli'),
