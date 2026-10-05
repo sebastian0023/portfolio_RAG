@@ -48,6 +48,8 @@ export type Configs = {
   readonly embedding: unknown;
   readonly index: unknown;
   readonly metadataSchema: unknown;
+  // Folded into the hash only when set. The rollback drill uses it to build a second, different index.
+  readonly salt?: string;
 };
 
 // A finding names the rule and the line, never the offending text, so a report cannot leak what it found.

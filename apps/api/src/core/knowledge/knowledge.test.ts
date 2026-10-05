@@ -1,7 +1,8 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { dirname, join, relative, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { describe, expect, test } from 'vitest';
+import {
+  FIXTURE_OPTIONS,
+  fixtureCorpusFiles,
+} from '../../testing/fixture-corpus.js';
 import { EMBEDDING_CONFIG } from '@portfolio/shared';
 import { chunkDocument, packText } from './chunker.js';
 import { CHUNKER_CONFIG, CONFIGS, INDEX_NAME_PATTERN } from './config.js';
@@ -12,27 +13,8 @@ import { checkMetadataLimits, toVectorMetadata } from './metadata.js';
 import { parseSections } from './markdown.js';
 import { scanPublicSafety } from './public-safety.js';
 
-const root = resolve(dirname(fileURLToPath(import.meta.url)), '../../testing');
-const fixtureDir = join(root, 'fixtures/knowledge/valid');
-
-function walk(dir: string): string[] {
-  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) =>
-    entry.isDirectory()
-      ? walk(join(dir, entry.name))
-      : entry.name.endsWith('.md')
-        ? [join(dir, entry.name)]
-        : [],
-  );
-}
-
-const files: CorpusFile[] = walk(fixtureDir).map((file) => ({
-  path: `knowledge/${relative(fixtureDir, file).replaceAll('\\', '/')}`,
-  raw: readFileSync(file, 'utf8'),
-}));
-const options = {
-  allowedHosts: ['example.org'],
-  now: Date.parse('2026-10-04T00:00:00Z'),
-};
+const files: CorpusFile[] = fixtureCorpusFiles();
+const options = FIXTURE_OPTIONS;
 
 const doc = (body: string, extra = ''): string =>
   `---\nid: test-doc\ntitle: Test\nkind: faq\nlang: en\nupdated: 2026-01-01\n${extra}reviewed: true\n---\n${body}`;
