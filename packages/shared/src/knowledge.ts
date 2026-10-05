@@ -13,9 +13,9 @@ export type SourceKind = (typeof SOURCE_KINDS)[number];
 // The browser rejects a `sources` event with more entries than this (chat-stream-schema.ts).
 export const MAX_SOURCES = 5;
 
-// Hosts a source file or citation may link to. Empty until the owner approves the list with the corpus (P5-01),
-// so no link is accepted before then.
-export const ALLOWED_SOURCE_HOSTS: readonly string[] = [];
+// Hosts a source file or citation may link to, approved by the owner with the corpus (P5-01). Exact host match
+// only: a sub-domain or a look-alike is not on the list.
+export const ALLOWED_SOURCE_HOSTS: readonly string[] = ['github.com'];
 
 // https only, no credentials, no explicit port, and an exact (case-insensitive) match on an allowed host.
 export function isAllowedSourceUrl(
