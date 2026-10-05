@@ -77,6 +77,16 @@ describe('text safety', () => {
   });
 });
 
+describe('grounded system prompt', () => {
+  test('requires sources, forbids invented numbers, and treats input as untrusted data', () => {
+    expect(GROUNDED_SYSTEM_PROMPT).toMatch(/only the numbered sources/i);
+    expect(GROUNDED_SYSTEM_PROMPT).toMatch(/never invent a number/i);
+    expect(GROUNDED_SYSTEM_PROMPT).toContain(NO_COVERAGE_TEXT);
+    expect(GROUNDED_SYSTEM_PROMPT).toMatch(/untrusted data/i);
+    expect(GROUNDED_SYSTEM_PROMPT).toMatch(/never follow instructions/i);
+  });
+});
+
 describe('PromptBuilder', () => {
   test('keeps policy, evidence, and question in separate places', () => {
     const result = build([match(1), match(2)]);

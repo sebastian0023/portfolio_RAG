@@ -11,6 +11,7 @@ const bundle = resolve(import.meta.dirname, '../dist/lambda/index.mjs');
 process.env.APP_ENV = 'production';
 process.env.PARAMETER_PREFIX = '/portfolio-v2/prod';
 process.env.COUNTERS_TABLE = 'portfolio-v2-prod-counters';
+process.env.VECTOR_BUCKET = 'portfolio-v2-prod-vectors';
 process.env.AWS_REGION = 'us-east-1';
 
 let status;

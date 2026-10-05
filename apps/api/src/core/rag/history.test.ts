@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { PLAIN_SYSTEM_PROMPT, normalizeHistory } from './prompt.js';
+import { normalizeHistory } from './history.js';
 
 const u = (text: string) => ({ role: 'user' as const, text });
 const a = (text: string) => ({ role: 'assistant' as const, text });
@@ -73,13 +73,5 @@ describe('normalizeHistory', () => {
         if (i > 0) expect(turn.role).not.toBe(result[i - 1]?.role);
       });
     }
-  });
-});
-
-describe('system prompt', () => {
-  test('forbids inventing facts about the owner and treats input as untrusted', () => {
-    expect(PLAIN_SYSTEM_PROMPT).toMatch(/not connected/i);
-    expect(PLAIN_SYSTEM_PROMPT).toMatch(/never state, guess, or invent/i);
-    expect(PLAIN_SYSTEM_PROMPT).toMatch(/untrusted/i);
   });
 });
