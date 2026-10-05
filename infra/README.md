@@ -11,6 +11,8 @@ Terraform for the single production stack (ADR-005, ADR-032, ADR-047). Nothing h
 | `stack/`            | The single stack root: `ssm`, `budgets`, `web`, `storage`, `api`, and `edge`.              |
 | `scripts/`          | `check-plan.ts` (plan guard), `deploy-web.ts` and `smoke-edge.ts` (operator-run, Phase 3). |
 
+The `vectors` module holds the S3 Vectors bucket and the ingest and eval roles (ADR-053). It owns only the bucket; indexes are created by the ingest tool, and the plan guard rejects a Terraform-managed index.
+
 Allowed module names: `bootstrap`, `oidc`, `edge`, `web`, `api`, `auth`, `storage`, `vectors`, `budgets`, `ssm`, `observability`.
 
 ## Conventions (ADR-047)
