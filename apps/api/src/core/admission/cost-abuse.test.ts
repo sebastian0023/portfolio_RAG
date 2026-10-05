@@ -5,6 +5,12 @@ import type { LLMEvent } from '@portfolio/shared';
 import { describe, expect, test } from 'vitest';
 import { scriptedProvider } from '../../testing/fake-llm-provider.js';
 import { configFrom, memoryLogger, rawConfig } from '../../testing/helpers.js';
+import {
+  OFF_TOPIC_QUESTION,
+  STUDY_PASSAGE,
+  STUDY_QUESTION,
+  fakeRetrieval,
+} from '../../testing/fake-retrieval.js';
 import { InMemoryCounterStore } from '../../testing/in-memory-counter-store.js';
 import {
   byteCapStage,
@@ -15,7 +21,6 @@ import {
   type AdmissionContext,
 } from '../chat/admission.js';
 import { createChatHandler } from '../chat/chat-handler.js';
-import { createPlainChatService } from '../chat/plain-chat-service.js';
 import {
   createGuestPassHandler,
   guestTokenStage,
@@ -24,10 +29,12 @@ import { issuePass } from '../guest/guest-pass.js';
 import { CachedSecrets } from '../guest/secrets.js';
 import type { TurnstileOutcome } from '../guest/turnstile-port.js';
 import { ProviderRegistry } from '../llm/provider-registry.js';
+import { createRagService } from '../rag/rag-service.js';
 import {
   chatEnabledStage,
   guestPassStage,
   guestQuotaStage,
+  indexReadyStage,
   preAuthRateStage,
   trustedIpStage,
 } from './stages.js';
@@ -68,6 +75,7 @@ function build(options: Options = {}) {
   );
   const store = options.store ?? new InMemoryCounterStore();
   const logger = memoryLogger();
+  const retrieval = fakeRetrieval([STUDY_PASSAGE]);
   const secrets = new CachedSecrets({
     load: () =>
       options.secretsFail
@@ -87,14 +95,15 @@ function build(options: Options = {}) {
       trustedIpStage,
       preAuthRateStage(store, () => now),
       chatEnabledStage,
+      indexReadyStage,
       guestPassStage(secrets, () => now),
       providerStage(registry),
       guestQuotaStage(store, () => now),
     ],
-    service: createPlainChatService({ logger }),
+    service: createRagService({ ...retrieval, logger }),
     logger,
   });
-  return { handler, provider, store, secrets, logger };
+  return { handler, provider, store, secrets, logger, retrieval };
 }
 
 type Built = ReturnType<typeof build>;
@@ -107,6 +116,7 @@ interface Ask {
   readonly pass?: string | null;
   readonly headers?: Record<string, string>;
   readonly signal?: AbortSignal;
+  readonly question?: string;
 }
 
 function contextFor(ask: Ask): AdmissionContext {
@@ -121,7 +131,7 @@ function contextFor(ask: Ask): AdmissionContext {
     contentType: 'application/json',
     headers,
     body: new Blob([
-      JSON.stringify({ question: 'hello', history: [] }),
+      JSON.stringify({ question: ask.question ?? STUDY_QUESTION, history: [] }),
     ]).stream(),
     signal: ask.signal ?? new AbortController().signal,
   };
@@ -145,10 +155,14 @@ describe('cost abuse: daily quotas', () => {
     const h = build();
     for (let i = 0; i < 10; i += 1) expect((await ask(h)).status).toBe(200);
     expect(h.provider.requests).toHaveLength(10);
+    expect(h.retrieval.embedder.calls()).toBe(10);
     const refused = await ask(h);
     expect(refused.status).toBe(429);
     expect(code(refused)).toBe('quota_exhausted');
     expect(h.provider.requests).toHaveLength(10);
+    // Neither the embedding nor the index is touched for a refused question.
+    expect(h.retrieval.embedder.calls()).toBe(10);
+    expect(h.retrieval.repository.calls()).toBe(10);
   });
 
   test('the 51st question from a new visitor is site_limit and makes no model call', async () => {
@@ -353,15 +367,100 @@ describe('cost abuse: reservations are never refunded', () => {
         trustedIpStage,
         preAuthRateStage(h.store, () => NOW),
         chatEnabledStage,
+        indexReadyStage,
         guestPassStage(h.secrets, () => NOW),
         providerStage(registry),
         guestQuotaStage(h.store, () => NOW),
       ],
-      service: createPlainChatService({ logger: h.logger }),
+      service: createRagService({ ...h.retrieval, logger: h.logger }),
       logger: h.logger,
     });
     const response = await handler(contextFor({}), 'req');
     expect(response.status).toBe(503);
+    expect(h.store.counts.get('quota#global#20261004')).toBe(1);
+  });
+});
+
+describe('cost abuse: retrieval (ADR-054)', () => {
+  test('no active index refuses with 503 before the pass check, the quota, and every paid call', async () => {
+    const h = build({ raw: rawConfig({ active_index: 'none' }) });
+    // Even a request with no pass is refused as unavailable, not sent back through the bot check.
+    const result = await ask(h, { pass: null });
+    expect(result.status).toBe(503);
+    expect(code(result)).toBe('unavailable');
+    expect(h.retrieval.embedder.calls()).toBe(0);
+    expect(h.retrieval.repository.calls()).toBe(0);
+    expect(h.provider.requests).toHaveLength(0);
+    expect([...h.store.counts.keys()].some((k) => k.startsWith('quota#'))).toBe(
+      false,
+    );
+  });
+
+  test('an off-topic question costs one embedding and one query, uses a question, and makes no model call', async () => {
+    const h = build();
+    const result = await ask(h, { question: OFF_TOPIC_QUESTION });
+    expect(result.status).toBe(200);
+    expect(result.events.map((e) => e.type)).toEqual([
+      'accepted',
+      'delta',
+      'done',
+    ]);
+    expect(result.events.at(-1)).toMatchObject({ coverage: 'none', cited: [] });
+    expect(h.retrieval.embedder.calls()).toBe(1);
+    expect(h.retrieval.repository.calls()).toBe(1);
+    expect(h.provider.requests).toHaveLength(0);
+    expect(h.store.counts.get('quota#global#20261004')).toBe(1);
+  });
+
+  test('a grounded question costs exactly one embedding, one query, and one model call', async () => {
+    const h = build();
+    const result = await ask(h);
+    expect(result.status).toBe(200);
+    expect(result.events.map((e) => e.type)).toEqual([
+      'accepted',
+      'sources',
+      'delta',
+      'done',
+    ]);
+    expect(h.retrieval.embedder.calls()).toBe(1);
+    expect(h.retrieval.repository.calls()).toBe(1);
+    expect(h.provider.requests).toHaveLength(1);
+  });
+
+  test('a failing embedding refuses with 503, makes no model call, and still used a question', async () => {
+    const h = build();
+    const failing = {
+      config: h.retrieval.embedder.config,
+      embed: () =>
+        Promise.resolve({ ok: false as const, code: 'unavailable' as const }),
+    };
+    const handler = createChatHandler({
+      stages: [
+        contentTypeStage,
+        byteCapStage,
+        schemaStage,
+        configStage(configFrom(loose())),
+        trustedIpStage,
+        preAuthRateStage(h.store, () => NOW),
+        chatEnabledStage,
+        indexReadyStage,
+        guestPassStage(h.secrets, () => NOW),
+        providerStage(
+          new ProviderRegistry().register('bedrock-runtime', () => h.provider),
+        ),
+        guestQuotaStage(h.store, () => NOW),
+      ],
+      service: createRagService({
+        embedder: failing,
+        repository: h.retrieval.repository,
+        logger: h.logger,
+      }),
+      logger: h.logger,
+    });
+    const response = await handler(contextFor({}), 'req');
+    expect(response.status).toBe(503);
+    expect(h.retrieval.repository.calls()).toBe(0);
+    expect(h.provider.requests).toHaveLength(0);
     expect(h.store.counts.get('quota#global#20261004')).toBe(1);
   });
 });
@@ -390,6 +489,8 @@ describe('cost abuse: failures refuse before a paid call (fail closed)', () => {
     const result = await ask(h);
     expect(result.status).toBe(503);
     expect(h.provider.requests).toHaveLength(0);
+    expect(h.retrieval.embedder.calls()).toBe(0);
+    expect(h.retrieval.repository.calls()).toBe(0);
     expect([...h.store.counts.keys()].some((k) => k.startsWith('quota#'))).toBe(
       false,
     );

@@ -300,4 +300,49 @@ describe('plan guard (ADR-033, ADR-047)', () => {
     };
     expect(checkPlan(plan)).toHaveLength(2);
   });
+
+  describe('S3 Vectors (ADR-053)', () => {
+    const bucket = (actions: string[], attrs: Record<string, unknown>) =>
+      change('aws_s3vectors_vector_bucket', actions, {
+        vector_bucket_name: 'portfolio-v2-prod-vectors',
+        force_destroy: false,
+        ...attrs,
+      });
+
+    test('allows creating a prefixed vector bucket', () => {
+      expect(checkPlan(bucket(['create'], {}))).toEqual([]);
+    });
+
+    test('rejects a vector bucket outside the prefix', () => {
+      const plan = bucket(['create'], { vector_bucket_name: 'other-vectors' });
+      expect(checkPlan(plan).map((v) => v.reason)).toEqual([
+        'vector_bucket_name "other-vectors" is outside the portfolio-v2 prefix',
+      ]);
+    });
+
+    test('rejects destroying or replacing the vector bucket', () => {
+      for (const actions of [['delete'], ['delete', 'create']]) {
+        expect(checkPlan(bucket(actions, {})).map((v) => v.reason)).toContain(
+          'would destroy or replace a protected stateful resource',
+        );
+      }
+    });
+
+    test('rejects force_destroy, which would delete every index', () => {
+      expect(
+        checkPlan(bucket(['update'], { force_destroy: true })).map(
+          (v) => v.reason,
+        ),
+      ).toContain('force_destroy must stay false on a vector bucket');
+    });
+
+    test('rejects a Terraform-managed index: indexes belong to the ingest tool', () => {
+      const plan = change('aws_s3vectors_index', ['create'], {
+        index_name: 'chunks-0123456789abcdef',
+      });
+      expect(checkPlan(plan).map((v) => v.reason)).toContain(
+        'resource type aws_s3vectors_index is not allowed by the guard',
+      );
+    });
+  });
 });

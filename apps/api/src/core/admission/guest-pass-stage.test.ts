@@ -18,6 +18,7 @@ import {
   chatEnabledStage,
   guestPassStage,
   guestQuotaStage,
+  indexReadyStage,
   preAuthRateStage,
   trustedIpStage,
 } from './stages.js';
@@ -70,6 +71,7 @@ function chain(
         preAuthRateStage(store, () => NOW),
       ),
       spy('chatEnabled', chatEnabledStage),
+      spy('indexReady', indexReadyStage),
       spy(
         'guestPass',
         guestPassStage(options.secrets ?? secrets(), () => NOW),
@@ -99,12 +101,13 @@ describe('guest pass stage (ADR-052)', () => {
     expect(ctx.quota).toEqual({ left: 9, limit: 10 });
   });
 
-  test('runs after chat_enabled and before the provider and the quota', async () => {
+  test('runs after chat_enabled and the index check, and before the provider and the quota', async () => {
     const { pass } = issuePass(KEY, BUCKET, NOW);
     const { stages, calls } = chain(new InMemoryCounterStore());
     await runAdmission(stages, request(pass));
-    expect(calls.slice(-4)).toEqual([
+    expect(calls.slice(-5)).toEqual([
       'chatEnabled',
+      'indexReady',
       'guestPass',
       'provider',
       'guestQuota',

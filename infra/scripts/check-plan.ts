@@ -50,6 +50,9 @@ const NAME_ATTRIBUTE: Readonly<Record<string, string>> = {
   aws_cloudfront_origin_request_policy: 'name',
   aws_cloudfront_response_headers_policy: 'name',
   aws_dynamodb_table: 'name',
+  // Only the bucket is allowed. Indexes are created by the ingest tool (ADR-053), so a Terraform-managed
+  // aws_s3vectors_index is rejected here on purpose.
+  aws_s3vectors_vector_bucket: 'vector_bucket_name',
   aws_cloudwatch_log_group: 'name',
 };
 
@@ -109,6 +112,14 @@ export function checkPlan(plan: Plan): Violation[] {
     const destroys = rc.change.actions.includes('delete');
     if (destroys && PROTECTED_TYPES.has(rc.type)) {
       add(rc.address, 'would destroy or replace a protected stateful resource');
+    }
+
+    // force_destroy deletes every index in the bucket when the bucket is destroyed (provider v6.67.0).
+    if (
+      rc.type === 'aws_s3vectors_vector_bucket' &&
+      rc.change.after?.['force_destroy'] === true
+    ) {
+      add(rc.address, 'force_destroy must stay false on a vector bucket');
     }
 
     const attribute = NAME_ATTRIBUTE[rc.type];

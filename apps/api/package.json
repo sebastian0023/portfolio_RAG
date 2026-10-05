@@ -6,7 +6,9 @@
   "dependencies": {
     "@aws-sdk/client-bedrock-runtime": "3.1146.0",
     "@aws-sdk/client-dynamodb": "3.1146.0",
+    "@aws-sdk/client-s3vectors": "3.1146.0",
     "@aws-sdk/client-ssm": "3.1146.0",
+    "@aws-sdk/client-sts": "3.1146.0",
     "@portfolio/shared": "*",
     "hono": "4.13.13",
     "zod": "4.6.5"
@@ -15,6 +17,7 @@
     "esbuild": "0.28.2"
   },
   "scripts": {
-    "build": "node scripts/build.ts"
+    "build": "node scripts/build.ts",
+    "build:cli": "node scripts/build-cli.ts"
   }
 }

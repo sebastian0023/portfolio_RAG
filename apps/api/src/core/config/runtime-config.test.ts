@@ -78,7 +78,7 @@ describe('parseRuntimeConfig', () => {
     expect(on.ok && on.config.chatEnabled).toBe(true);
   });
 
-  test.each(['chunks-0123abcd', `chunks-${'a'.repeat(64)}`])(
+  test.each(['chunks-0123456789abcdef', 'chunks-ffffffffffffffff'])(
     'active_index accepts %s',
     (value) => {
       expect(parseRuntimeConfig(withOverride({ active_index: value })).ok).toBe(
@@ -91,10 +91,13 @@ describe('parseRuntimeConfig', () => {
     'prod',
     'chunks-',
     'chunks-XYZ',
-    'chunks-0123abc',
-    `chunks-${'a'.repeat(65)}`,
-    '../chunks-0123abcd',
-    'chunks-0123abcd/extra',
+    'chunks-0123abcd',
+    'chunks-0123456789abcde',
+    'chunks-0123456789abcdef0',
+    `chunks-${'a'.repeat(64)}`,
+    'chunks-0123456789ABCDEF',
+    '../chunks-0123456789abcdef',
+    'chunks-0123456789abcdef/extra',
     'NONE',
   ])('active_index rejects %j', (value) => {
     expect(problemsFor(withOverride({ active_index: value }))[0]).toMatchObject(

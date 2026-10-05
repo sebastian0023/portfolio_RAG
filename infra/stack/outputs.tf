@@ -34,3 +34,15 @@ output "api_function_url" {
   description = "Direct Function URL; only used by the smoke test to prove unsigned calls are refused."
   value       = module.api.function_url
 }
+
+output "vector_bucket" {
+  value = module.vectors.vector_bucket_name
+}
+
+output "ingest_role_arn" {
+  value = module.vectors.ingest_role_arn
+}
+
+output "eval_role_arn" {
+  value = module.vectors.eval_role_arn
+}

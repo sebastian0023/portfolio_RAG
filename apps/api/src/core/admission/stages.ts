@@ -70,6 +70,16 @@ export const chatEnabledStage: AdmissionStage = (ctx) =>
     ctx.config?.chatEnabled === true ? undefined : reject('unavailable'),
   );
 
+// Retrieval needs an index. While none is active (before the first promotion, or after a rollback to `none`) the
+// request is refused here, before the guest pass and the quota, so a visitor is not sent through the bot check or
+// charged a question for something that cannot be answered (ADR-054). Reads only the config of this request.
+export const indexReadyStage: AdmissionStage = (ctx) =>
+  Promise.resolve(
+    ctx.config !== undefined && ctx.config.activeIndex !== 'none'
+      ? undefined
+      : reject('unavailable'),
+  );
+
 // The daily quota (ADR-051): 10 questions per visitor IP bucket and 50 for the whole site, reserved together in
 // one atomic transaction before the first paid call and never refunded, so a disconnect still counts. A refused
 // visitor does not use up site capacity. Which limit was hit decides the refusal: the visitor's own

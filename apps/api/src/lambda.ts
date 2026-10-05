@@ -2,10 +2,13 @@
 // Production rejects anything else, so an invalid environment fails at init instead of at the first request.
 import { BedrockRuntimeClient } from '@aws-sdk/client-bedrock-runtime';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
+import { S3VectorsClient } from '@aws-sdk/client-s3vectors';
 import { SSMClient } from '@aws-sdk/client-ssm';
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { createBedrockConverseProvider } from './adapters/bedrock/bedrock-converse-provider.js';
+import { TitanEmbedder } from './adapters/bedrock/titan-embedder.js';
+import { S3VectorsIndexRepository } from './adapters/s3vectors/s3-vectors-index-repository.js';
 import { createHttpApp } from './adapters/http/app.js';
 import { createStreamHandler } from './adapters/lambda/stream-handler.js';
 import { DynamoDbCounterStore } from './adapters/dynamodb/dynamodb-counter-store.js';
@@ -24,11 +27,11 @@ import {
   chatEnabledStage,
   guestPassStage,
   guestQuotaStage,
+  indexReadyStage,
   preAuthRateStage,
   trustedIpStage,
 } from './core/admission/stages.js';
 import { createChatHandler } from './core/chat/chat-handler.js';
-import { createPlainChatService } from './core/chat/plain-chat-service.js';
 import { CachedConfig } from './core/config/cached-config.js';
 import {
   createGuestPassHandler,
@@ -36,11 +39,13 @@ import {
 } from './core/guest/guest-pass-handler.js';
 import { CachedSecrets } from './core/guest/secrets.js';
 import { ProviderRegistry } from './core/llm/provider-registry.js';
+import { createRagService } from './core/rag/rag-service.js';
 
 const environmentSchema = z.object({
   APP_ENV: z.literal('production'),
   PARAMETER_PREFIX: z.string().regex(/^\/portfolio-v2\/[a-z]+$/),
   COUNTERS_TABLE: z.string().min(1),
+  VECTOR_BUCKET: z.string().min(1),
   AWS_REGION: z.string().min(1),
 });
 
@@ -64,6 +69,20 @@ const bedrock = new BedrockRuntimeClient({
 const registry = new ProviderRegistry().register('bedrock-runtime', (model) =>
   createBedrockConverseProvider(bedrock, model),
 );
+
+// Retrieval (ADR-054). Questions are embedded with Titan and searched in the vector bucket. One retry each is
+// allowed (abuse-budgets.md); generation above keeps zero. A short connect timeout keeps a dead endpoint from
+// eating the request deadline.
+const embeddings = new BedrockRuntimeClient({
+  region: env.AWS_REGION,
+  maxAttempts: 2,
+  requestHandler: { connectionTimeout: 3000 },
+});
+const vectors = new S3VectorsClient({
+  region: env.AWS_REGION,
+  maxAttempts: 2,
+  requestHandler: { connectionTimeout: 3000 },
+});
 
 // A failed counter write or an unreadable response refuses the request (fail closed, ADR-017).
 const counters = new DynamoDbCounterStore(
@@ -91,11 +110,18 @@ const handleChat = createChatHandler({
     trustedIpStage,
     preAuthRateStage(counters),
     chatEnabledStage,
+    indexReadyStage,
     guestPassStage(secrets),
     providerStage(registry),
     guestQuotaStage(counters),
   ],
-  service: createPlainChatService({ logger }),
+  service: createRagService({
+    embedder: new TitanEmbedder(embeddings),
+    repository: new S3VectorsIndexRepository(vectors, {
+      bucket: env.VECTOR_BUCKET,
+    }),
+    logger,
+  }),
   logger,
 });
 
