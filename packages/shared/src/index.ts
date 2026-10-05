@@ -36,3 +36,12 @@ export type {
   QuotaState,
   SourceCitation,
 } from './chat-stream.js';
+export {
+  ALLOWED_SOURCE_HOSTS,
+  MAX_SOURCES,
+  SOURCE_KINDS,
+  isAllowedSourceUrl,
+} from './knowledge.js';
+export type { SourceKind } from './knowledge.js';
+export { EMBEDDING_CONFIG } from './embedder.js';
+export type { EmbedErrorCode, EmbedResult, Embedder } from './embedder.js';

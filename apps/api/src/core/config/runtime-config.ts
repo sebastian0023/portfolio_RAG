@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { INDEX_NAME_PATTERN } from '../knowledge/config.js';
 
 // Names of the SSM parameters under the stack prefix. infra/modules/ssm/parameters.json is the
 // single source of their defaults; tests/contracts/ssm-parameters.test.ts keeps both in step.
@@ -58,7 +59,7 @@ const limitsSchema = z.strictObject({
 
 const activeIndexSchema = z.union([
   z.literal('none'),
-  z.string().regex(/^chunks-[0-9a-f]{8,64}$/),
+  z.string().regex(INDEX_NAME_PATTERN),
 ]);
 
 export type Limits = z.infer<typeof limitsSchema>;
