@@ -31,8 +31,8 @@ module "budgets" {
   operator_role_arn     = "arn:aws:iam::${local.account_id}:role/${local.name_prefix}-operator"
   bedrock_service_names = var.bedrock_service_names
 
-  # The API role is a kill-switch target (kill-switch.md). Referencing the module output orders its creation first.
-  additional_kill_target_roles = [module.api.role_name]
+  # The API, ingest, and eval roles are kill-switch targets (kill-switch.md, R-14). Referencing the module output orders its creation first.
+  additional_kill_target_roles = [module.api.role_name, module.vectors.ingest_role_name, module.vectors.eval_role_name]
 }
 
 module "web" {
@@ -48,6 +48,16 @@ module "storage" {
   name_prefix = local.name_prefix
 }
 
+module "vectors" {
+  source = "../modules/vectors"
+
+  name_prefix       = local.name_prefix
+  account_id        = local.account_id
+  region            = var.region
+  operator_role_arn = "arn:aws:iam::${local.account_id}:role/${local.name_prefix}-operator"
+  parameter_prefix  = "/portfolio-v2/${var.env}"
+}
+
 module "api" {
   source = "../modules/api"
 
@@ -59,6 +69,8 @@ module "api" {
   parameter_prefix    = "/portfolio-v2/${var.env}"
   counters_table_name = module.storage.counters_table_name
   counters_table_arn  = module.storage.counters_table_arn
+  vector_bucket_name  = module.vectors.vector_bucket_name
+  vector_index_arns   = module.vectors.index_arn_pattern
 }
 
 module "edge" {

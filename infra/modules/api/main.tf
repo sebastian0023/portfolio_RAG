@@ -60,6 +60,20 @@ data "aws_iam_policy_document" "api" {
     resources = [var.counters_table_arn]
   }
 
+  # Embeds the visitor's question for retrieval (ADR-020). Inference stays behind the budget kill switch.
+  statement {
+    sid       = "EmbedQuestions"
+    actions   = ["bedrock:InvokeModel"]
+    resources = ["arn:aws:bedrock:${var.region}::foundation-model/amazon.titan-embed-text-v2:0"]
+  }
+
+  # GetVectors is required alongside QueryVectors whenever a filter or returnMetadata is used.
+  statement {
+    sid       = "QueryActiveIndex"
+    actions   = ["s3vectors:QueryVectors", "s3vectors:GetVectors"]
+    resources = [var.vector_index_arns]
+  }
+
   statement {
     sid       = "InvokeProfile"
     actions   = ["bedrock:InvokeModelWithResponseStream"]
@@ -113,6 +127,7 @@ resource "aws_lambda_function" "api" {
       APP_ENV          = "production"
       PARAMETER_PREFIX = var.parameter_prefix
       COUNTERS_TABLE   = var.counters_table_name
+      VECTOR_BUCKET    = var.vector_bucket_name
     }
   }
 
