@@ -11,6 +11,8 @@
 {"id":"programming-languages","kind":"answerable","question":"Which programming languages does Daniel know?","expectedSourceIds":["skills-overview"]}
 {"id":"cloud-services","kind":"answerable","question":"Which AWS and Cloudflare services has Daniel used?","expectedSourceIds":["skills-overview"]}
 {"id":"spoken-languages","kind":"answerable","question":"Which languages does Daniel speak?","expectedSourceIds":["faq-general"]}
+{"id":"internships","kind":"answerable","question":"Is Daniel open to internships?","expectedSourceIds":["faq-general"]}
+{"id":"contact","kind":"answerable","question":"How can I contact Daniel?","expectedSourceIds":["faq-general"]}
 {"id":"sourdough","kind":"off_topic","question":"How do I bake sourdough bread at high altitude?"}
 {"id":"stocks","kind":"off_topic","question":"Which stocks should I buy this week?"}
 {"id":"world-cup","kind":"off_topic","question":"Who won the most recent football World Cup?"}
