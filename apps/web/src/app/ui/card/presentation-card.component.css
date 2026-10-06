@@ -1,7 +1,8 @@
 .card {
   background: var(--surface);
   border-radius: var(--radius-panel);
-  box-shadow: var(--elev-raised);
+  /* No outer glow: the card is set apart by the page color instead. */
+  box-shadow: none;
   display: flex;
   flex-direction: column;
 }
@@ -24,6 +25,7 @@
   gap: 16px;
 }
 .avatar {
+  position: relative;
   flex: none;
   width: 88px;
   height: 88px;
@@ -35,6 +37,14 @@
   font-weight: 700;
   font-size: 28px;
   color: var(--accent);
+}
+.avatar-img {
+  position: absolute;
+  inset: 5px;
+  width: calc(100% - 10px);
+  height: calc(100% - 10px);
+  border-radius: 50%;
+  object-fit: cover;
 }
 .avatar--sm {
   width: 64px;

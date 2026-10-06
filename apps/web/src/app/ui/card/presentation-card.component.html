@@ -22,7 +22,12 @@
     [attr.aria-label]="'About ' + profile().name.value"
   >
     <div class="intro">
-      <div class="avatar" aria-hidden="true">{{ profile().initials }}</div>
+      <div class="avatar" aria-hidden="true">
+        {{ profile().initials }}
+        @if (profile().avatarSrc; as src) {
+          <img class="avatar-img" [src]="src" alt="" />
+        }
+      </div>
       <h1 class="name">
         <app-slot
           size="lg"
@@ -43,7 +48,7 @@
     </div>
     <app-fact-list [facts]="profile().facts" [markers]="markers()" />
     <app-link-grid [links]="profile().links" [columns]="2" [tooltips]="true" />
-    <app-recent-timeline [items]="profile().recent" [markers]="markers()" />
+    <app-project-list [projects]="profile().projects" />
     <ng-container *ngTemplateOutlet="footer" />
   </aside>
 } @else {
@@ -55,6 +60,9 @@
     <div class="compact-head">
       <div class="avatar avatar--sm" aria-hidden="true">
         {{ profile().initials }}
+        @if (profile().avatarSrc; as src) {
+          <img class="avatar-img" [src]="src" alt="" />
+        }
       </div>
       <div class="who">
         <h1 class="name name--sm">
@@ -92,7 +100,7 @@
     @if (expanded()) {
       <div id="more-details" class="more">
         <app-fact-list [facts]="profile().facts" [markers]="markers()" />
-        <app-recent-timeline [items]="profile().recent" [markers]="markers()" />
+        <app-project-list [projects]="profile().projects" />
         <ng-container *ngTemplateOutlet="footer" />
       </div>
     }

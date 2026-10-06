@@ -11,7 +11,7 @@ import { AvailabilityPillComponent } from './availability-pill.component';
 import type { CardProfile } from './card.models';
 import { FactListComponent } from './fact-list.component';
 import { LinkGridComponent } from './link-grid.component';
-import { RecentTimelineComponent } from './recent-timeline.component';
+import { ProjectListComponent } from './project-list.component';
 import { SlotComponent } from './slot.component';
 
 // 'aside' is the desktop column; 'compact' sits above the chat on tablet and phone and keeps the
@@ -25,7 +25,7 @@ import { SlotComponent } from './slot.component';
     IconComponent,
     LinkGridComponent,
     NgTemplateOutlet,
-    RecentTimelineComponent,
+    ProjectListComponent,
     SlotComponent,
   ],
   templateUrl: './presentation-card.component.html',

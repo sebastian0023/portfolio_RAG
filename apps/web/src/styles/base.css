@@ -7,7 +7,8 @@ html,
 body {
   margin: 0;
   min-height: 100%;
-  background: var(--surface);
+  /* Only the page changes color. Cards, chat, and dialogs keep var(--surface). */
+  background: var(--page);
 }
 body {
   color: var(--text);

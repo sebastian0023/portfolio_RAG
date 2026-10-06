@@ -23,10 +23,13 @@ import type { CardLink } from './card.models';
           <li>
             <a
               [attr.href]="link.href ?? '#'"
-              target="_blank"
-              rel="noopener noreferrer"
+              [attr.target]="isWeb(link) ? '_blank' : null"
+              [attr.rel]="isWeb(link) ? 'noopener noreferrer' : null"
+              [attr.download]="link.download && link.href ? '' : null"
+              [attr.aria-disabled]="link.href === null ? 'true' : null"
               [attr.aria-label]="link.ariaLabel"
-              [attr.title]="tooltips() ? null : 'Opens in a new tab'"
+              [attr.data-brand]="link.id"
+              [attr.title]="tooltips() ? null : hint(link)"
               (click)="onClick($event, link)"
               (mouseenter)="show(link.id)"
               (mouseleave)="hide(link.id)"
@@ -35,10 +38,12 @@ import type { CardLink } from './card.models';
             >
               <app-icon [name]="link.icon" />
               <span class="label">{{ link.label }}</span>
-              <span class="ext"><app-icon name="ext" [size]="16" /></span>
+              @if (isWeb(link)) {
+                <span class="ext"><app-icon name="ext" [size]="16" /></span>
+              }
             </a>
             @if (tooltips() && tip() === link.id) {
-              <span role="tooltip" class="tip">Opens in a new tab</span>
+              <span role="tooltip" class="tip">{{ hint(link) }}</span>
             }
           </li>
         }
@@ -78,10 +83,25 @@ import type { CardLink } from './card.models';
     a:hover {
       color: var(--accent);
     }
+    /* Not available yet (no URL supplied): visibly inactive, never an accent hover. */
+    a[aria-disabled='true'] {
+      color: var(--text-muted);
+      cursor: default;
+    }
+    a[aria-disabled='true']:hover {
+      color: var(--text-muted);
+    }
     a:active {
       box-shadow: var(--elev-pressed);
       background: var(--accent-soft);
       color: var(--accent);
+    }
+    /* Brand colors stay on the icon even on hover; the dark theme lightens them so they remain visible. */
+    a[data-brand='gh'] app-icon:first-child {
+      color: var(--brand-github);
+    }
+    a[data-brand='li'] app-icon:first-child {
+      color: var(--brand-linkedin);
     }
     .label {
       flex: 1;
@@ -121,6 +141,18 @@ export class LinkGridComponent {
 
   protected hide(id: string): void {
     this.tip.update((current) => (current === id ? null : current));
+  }
+
+  protected isWeb(link: CardLink): boolean {
+    return link.href !== null && /^https?:/i.test(link.href);
+  }
+
+  // What the control will do, for the tooltip and the native title.
+  protected hint(link: CardLink): string {
+    if (link.href === null) return 'Coming soon';
+    if (link.href.startsWith('mailto:')) return 'Opens your email app';
+    if (link.download) return 'Downloads a PDF';
+    return 'Opens in a new tab';
   }
 
   protected onClick(event: Event, link: CardLink): void {

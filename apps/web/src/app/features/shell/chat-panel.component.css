@@ -10,7 +10,8 @@
   padding: 28px;
   border-radius: var(--radius-panel);
   background: var(--surface);
-  box-shadow: var(--elev-raised);
+  /* No outer glow, matching the profile card. Controls inside the panel keep their own depth. */
+  box-shadow: none;
 }
 .chat-head,
 .dialog-head,
