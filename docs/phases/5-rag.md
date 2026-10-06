@@ -1,6 +1,6 @@
 # Phase 5: RAG
 
-Status: Deployed and verified from `dev` (2026-10-05) except the owner's browser check of a grounded answer and the 24-hour cost figure. Chat is off; the first index is active.
+Status: Complete (deployed from `dev` at `73e56a1`, tagged `phase-5-complete`, owner sign-off 2026-10-06). Still to do: the Notion mirror, the 24-hour cost figure, and the live cosine test.
 
 Branch: `phase/5-rag`
 
@@ -85,14 +85,15 @@ Mitigations and evidence live in [Spikes and Risks](https://app.notion.com/p/9f1
 
 ## Exit checklist
 
-- [ ] Exit criteria above met: the index is built, gated, promoted and rolled back, and the window smoke passed; **a grounded, cited answer in a real browser is still to be confirmed by the owner**
+- [x] Exit criteria above met: the index is built, gated, promoted and rolled back; the gate ran the real answer path (Titan, S3 Vectors, Haiku) and every answerable question returned a valid citation; the bounded-window smoke passed. Note: the owner did not record a browser check of the live chat, so this rests on the gate evidence, the window smoke, and the owner's sign-off.
 - [x] Lint, typecheck, formatting, and Vitest green in CI (every Phase 5 pull request; 730 root/API tests, 177 Angular tests, 35 browser tests locally)
 - [x] Terraform fmt/validate/plan and Checkov green in CI on #46 (the apply itself is an owner step)
 - [ ] Phase-specific acceptance, cost, and security checks recorded (acceptance and security below; the 24-hour cost figure is still to come)
 - [x] Post-deploy smoke passed (chat off, and the bounded window)
 - [x] No secrets, private contact details, or confidential knowledge committed (no knowledge file exists yet; the safety gate runs in CI over `knowledge/`)
 - [ ] ADR and risk changes mirrored in Notion and `docs/`
-- [ ] PR merged into `dev`, tagged `phase-5-complete`, Notion phase set to Done
+- [x] PRs merged into `dev` and tagged `phase-5-complete`
+- [ ] Notion phase set to Done (owner)
 
 ## Evidence
 
@@ -107,9 +108,11 @@ Mitigations and evidence live in [Spikes and Risks](https://app.notion.com/p/9f1
 - Availability and contact (2026-10-05): the FAQ gained the owner-confirmed answers (open to internships; contact through the LinkedIn link on the card; no phone or email, no CV download promised until a PDF is hosted) and the golden set gained `internships` and `contact` (22 cases in all). New index `chunks-b89ecef72df4c1c0` (40 chunks, 40 embedding calls, then a no-op re-run) passed the gate with hit@5 1.0 (15 of 15, with the corrected `current-role` case), abstention 1.0, 0 injection leaks, citations 1.0, 690 tokens, and was promoted; the two earlier indexes are the rollback targets. Chat stayed off. The web card was also published from `dev` at `bb4f75b` with the real profile (no placeholders).
 - Smoke: chat off, every check passed; bounded window (`chat_enabled` true, then false, read back), `smoke-edge.ts --window` passed all five checks (forged and missing passes refused, a bogus Turnstile token refused by Cloudflare, uncached JSON, malformed body 400).
 - Not recorded yet: the owner's browser check on desktop and phone (grounded answer with working citations and viewer, off-topic abstention, injection attempt, the quota counter text and Stop button), the 24-hour Cost Explorer figure for Titan, Haiku and S3 Vectors, the live cosine test (`S3VECTORS_LIVE=1`), the Notion mirror, and sign-off.
-- Tag: `phase-5-complete`
 - CI run:
 - Deployment/smoke:
-- Sign-off:
+- Web deploy: `deploy-web.ts` from `73e56a1` published 45 files and invalidated `/index.html` and `/version.json`; the live `version.json` names `73e56a1`, `avatar.jpg` is served as `image/jpeg`, the live bundle has no placeholder text, and the chat-off smoke passed. This build adds the owner's photo, the card name, the Projects list, the email button, and a CV button that is disabled until the PDF is added (planned for when the whole project is finished).
+- Tag: `phase-5-complete` on `73e56a1`, the commit `version.json` names.
+- Chat state at close: `chat_enabled=false`, `active_index=chunks-b89ecef72df4c1c0`; the two earlier indexes are rollback targets.
+- Sign-off: the owner instructed on 2026-10-06 to mark the phase complete.
 
 Sign-off and detailed results are tracked in the [Notion plan](https://app.notion.com/p/3efc9c3293d981c4ab1bcf5e2dad3d55).
