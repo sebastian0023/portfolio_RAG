@@ -30,4 +30,3 @@ Yes. Daniel is open to internships. He is currently a Software Engineering Inter
 ## How can I contact Daniel?
 
 The best way to reach Daniel is the LinkedIn link on his card. His projects are on GitHub, and that link is on the card too. This assistant does not share personal phone numbers or email addresses.
-
