@@ -5,7 +5,7 @@ import type { CardProfile } from '../ui/card/card.models';
 export const DISPLAY_NAME = 'Daniel';
 
 export const PROFILE: CardProfile = {
-  name: { value: 'Daniel Sebastian Macias Macias' },
+  name: { value: 'Daniel Sebastian Macias' },
   initials: 'DM',
   avatarSrc: 'avatar.jpg',
   headline: { value: 'Software engineering intern, frontend' },

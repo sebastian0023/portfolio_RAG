@@ -104,7 +104,9 @@ describe('the live profile', () => {
 
   it('renders the owner name and the real links', () => {
     const f = render({ variant: 'aside', profile: PROFILE });
-    expect(text(f)).toContain('Daniel Sebastian Macias Macias');
+    expect(root(f).querySelector('h1')?.textContent?.trim()).toBe(
+      'Daniel Sebastian Macias',
+    );
     expect(text(f)).not.toMatch(/\[[^\]]+\]/);
     const anchors = Array.from(
       root(f).querySelectorAll<HTMLAnchorElement>('nav a'),
