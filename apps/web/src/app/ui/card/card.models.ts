@@ -23,13 +23,17 @@ export interface CardLink {
   readonly label: string;
   readonly icon: IconName;
   readonly ariaLabel: string;
+  // null means the owner has not supplied it yet: the control is shown disabled and goes nowhere.
   readonly href: string | null;
+  // The browser saves the file instead of opening it (the CV).
+  readonly download?: boolean;
 }
 
-export interface CardRecent {
-  readonly date: Slot;
-  readonly prefix: string;
-  readonly slot: Slot;
+// A project the owner built. It is plain text until the owner adds an https `href`.
+export interface CardProject {
+  readonly id: string;
+  readonly name: string;
+  readonly href: string | null;
 }
 
 export interface CardProfile {
@@ -42,6 +46,6 @@ export interface CardProfile {
   readonly availability: Availability;
   readonly facts: readonly CardFact[];
   readonly links: readonly CardLink[];
-  readonly recent: readonly CardRecent[];
+  readonly projects: readonly CardProject[];
   readonly lastUpdated: Slot;
 }

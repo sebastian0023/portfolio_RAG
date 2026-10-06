@@ -59,23 +59,7 @@ const TEMPLATE_PROFILE: CardProfile = {
       href: null,
     },
   ],
-  recent: [
-    {
-      date: { value: '[Sep 2026]', pending: true },
-      prefix: 'Building ',
-      slot: { value: '[project name]', pending: true },
-    },
-    {
-      date: { value: '[Aug 2026]', pending: true },
-      prefix: 'Learning ',
-      slot: { value: '[topic]', pending: true },
-    },
-    {
-      date: { value: '[Jul 2026]', pending: true },
-      prefix: 'Shipped ',
-      slot: { value: '[thing]', pending: true },
-    },
-  ],
+  projects: [{ id: 'p1', name: '[project name]', href: null }],
   lastUpdated: { value: '[date]', pending: true },
 };
 
@@ -100,23 +84,130 @@ const text = (f: ComponentFixture<unknown>): string =>
 beforeEach(() => TestBed.resetTestingModule());
 
 describe('the live profile', () => {
+  // Controls the owner has not supplied yet. Remove an id here when its URL is set (the CV needs the PDF).
+  const AWAITING = new Set(['cv']);
+
   it('has no placeholder, pending slot, or dead link', () => {
     const json = JSON.stringify(PROFILE);
     expect(json).not.toMatch(/\[[A-Za-z][^\]"]*\]/);
     expect(json).not.toContain('"pending"');
+    expect(json).not.toContain('"recent"');
     for (const link of PROFILE.links) {
-      expect(link.href, link.id).toMatch(/^https:\/\//);
+      if (AWAITING.has(link.id)) expect(link.href, link.id).toBeNull();
+      else expect(link.href, link.id).toMatch(/^(https:\/\/|mailto:)/);
+    }
+    for (const project of PROFILE.projects) {
+      if (project.href !== null)
+        expect(project.href, project.id).toMatch(/^https:\/\//);
     }
   });
 
-  it('renders the owner name and real links', () => {
+  it('renders the owner name and the real links', () => {
     const f = render({ variant: 'aside', profile: PROFILE });
     expect(text(f)).toContain('Daniel Sebastian Macias Macias');
     expect(text(f)).not.toMatch(/\[[^\]]+\]/);
-    const hrefs = Array.from(
+    const anchors = Array.from(
       root(f).querySelectorAll<HTMLAnchorElement>('nav a'),
-    ).map((a) => a.getAttribute('href'));
-    expect(hrefs).toEqual(PROFILE.links.map((l) => l.href));
+    );
+    expect(anchors.map((a) => a.getAttribute('data-brand'))).toEqual([
+      'gh',
+      'li',
+      'em',
+      'cv',
+    ]);
+    expect(anchors[0]?.getAttribute('href')).toBe(
+      'https://github.com/sebastian0023',
+    );
+    expect(anchors[2]?.getAttribute('href')).toMatch(
+      /^mailto:[^@\s]+@[^@\s]+$/,
+    );
+  });
+});
+
+describe('email and CV buttons', () => {
+  const links = (f: ComponentFixture<unknown>) =>
+    Array.from(root(f).querySelectorAll<HTMLAnchorElement>('nav a'));
+
+  it('opens an email draft without opening a new tab', () => {
+    const email = links(render({ variant: 'aside', profile: PROFILE }))[2]!;
+    expect(email.getAttribute('aria-label')).toBe('Email Daniel');
+    expect(email.getAttribute('href')).toMatch(/^mailto:/);
+    expect(email.hasAttribute('target')).toBe(false);
+    expect(email.querySelector('.ext')).toBeNull();
+  });
+
+  it('shows the CV as disabled until the PDF exists, and it goes nowhere', () => {
+    const f = render({ variant: 'aside', profile: PROFILE });
+    const cv = links(f)[3]!;
+    expect(cv.getAttribute('aria-label')).toBe("Download Daniel's CV (PDF)");
+    expect(cv.getAttribute('aria-disabled')).toBe('true');
+    expect(cv.hasAttribute('download')).toBe(false);
+    const click = new MouseEvent('click', { bubbles: true, cancelable: true });
+    cv.dispatchEvent(click);
+    expect(click.defaultPrevented).toBe(true);
+    cv.dispatchEvent(new FocusEvent('focus'));
+    f.detectChanges();
+    expect(root(f).querySelector('[role="tooltip"]')?.textContent).toContain(
+      'Coming soon',
+    );
+  });
+
+  it('becomes a real download as soon as a PDF address is set', () => {
+    const profile: CardProfile = {
+      ...PROFILE,
+      links: PROFILE.links.map((l) =>
+        l.id === 'cv' ? { ...l, href: 'daniel-macias-cv.pdf' } : l,
+      ),
+    };
+    const f = render({ variant: 'aside', profile });
+    const cv = links(f)[3]!;
+    expect(cv.getAttribute('href')).toBe('daniel-macias-cv.pdf');
+    expect(cv.hasAttribute('download')).toBe(true);
+    expect(cv.hasAttribute('aria-disabled')).toBe(false);
+    cv.dispatchEvent(new FocusEvent('focus'));
+    f.detectChanges();
+    expect(root(f).querySelector('[role="tooltip"]')?.textContent).toContain(
+      'Downloads a PDF',
+    );
+  });
+
+  it('keeps all four buttons in the compact card too', () => {
+    const f = render({ variant: 'compact', profile: PROFILE });
+    expect(links(f)).toHaveLength(4);
+  });
+});
+
+describe('projects', () => {
+  it('lists the project names in place of the old timeline, as plain text while they have no link', () => {
+    const f = render({ variant: 'aside', profile: PROFILE });
+    expect(text(f)).toContain('Projects');
+    expect(text(f)).not.toContain('Recently');
+    for (const project of PROFILE.projects)
+      expect(text(f)).toContain(project.name);
+    expect(
+      root(f).querySelectorAll('section[aria-labelledby="projects-heading"] a'),
+    ).toHaveLength(0);
+  });
+
+  it('turns a project into a safe external link once an https address is set', () => {
+    const profile: CardProfile = {
+      ...PROFILE,
+      projects: PROFILE.projects.map((p, i) =>
+        i === 1
+          ? { ...p, href: 'https://github.com/sebastian0023/relationship-rag' }
+          : p,
+      ),
+    };
+    const f = render({ variant: 'aside', profile });
+    const anchors = root(f).querySelectorAll<HTMLAnchorElement>(
+      'section[aria-labelledby="projects-heading"] a',
+    );
+    expect(anchors).toHaveLength(1);
+    expect(anchors[0]?.target).toBe('_blank');
+    expect(anchors[0]?.rel).toContain('noopener');
+    expect(anchors[0]?.getAttribute('aria-label')).toBe(
+      'Relationship RAG, opens in a new tab',
+    );
   });
 });
 
@@ -138,12 +229,13 @@ describe('avatar and link brand colors', () => {
     expect(root(f).querySelector('.avatar img')).toBeNull();
   });
 
-  it('tags the GitHub and LinkedIn links so each icon gets its brand color', () => {
+  it('tags every link with its id, so GitHub and LinkedIn can take their brand colors', () => {
     const f = render({ variant: 'aside', profile: PROFILE });
     const brands = Array.from(
       root(f).querySelectorAll<HTMLAnchorElement>('nav a'),
     ).map((a) => a.getAttribute('data-brand'));
-    expect(brands).toEqual(['gh', 'li']);
+    // Only GitHub and LinkedIn get brand colors (CSS keys on these two ids); email and CV use the normal text color.
+    expect(brands).toEqual(['gh', 'li', 'em', 'cv']);
   });
 
   it('has no Focus line in the live card', () => {
@@ -163,8 +255,8 @@ describe('PresentationCardComponent', () => {
   it('flags every pending slot when markers are on, and only pending ones', () => {
     const f = render({ variant: 'aside', markers: true });
     const tags = root(f).querySelectorAll('.tag');
-    // name, headline, location, graduation year, focus, 3 dates, 3 recent items, last updated
-    expect(tags.length).toBe(12);
+    // name, headline, location, graduation year, focus, last updated
+    expect(tags.length).toBe(6);
     // The fixed fact the design states is never marked.
     expect(
       Array.from(root(f).querySelectorAll('dd'))
@@ -176,21 +268,21 @@ describe('PresentationCardComponent', () => {
     );
   });
 
-  it('keeps public links keyboard reachable, in a new tab, with descriptive names', () => {
-    const f = render({ variant: 'aside' });
+  it('keeps public links keyboard reachable, with descriptive names, and web links in a new tab', () => {
+    const f = render({ variant: 'aside', profile: PROFILE });
     const links = Array.from(
       root(f).querySelectorAll<HTMLAnchorElement>('nav a'),
     );
     expect(links.map((a) => a.getAttribute('aria-label'))).toEqual([
       'Daniel on GitHub, opens in a new tab',
       'Daniel on LinkedIn, opens in a new tab',
-      "Daniel's résumé (PDF), opens in a new tab",
-      'Contact page for Daniel, opens in a new tab',
+      'Email Daniel',
+      "Download Daniel's CV (PDF)",
     ]);
-    for (const a of links) {
+    for (const a of links) expect(a.tabIndex).toBe(0);
+    for (const a of links.slice(0, 2)) {
       expect(a.target).toBe('_blank');
       expect(a.rel).toContain('noopener');
-      expect(a.tabIndex).toBe(0);
     }
   });
 
@@ -202,7 +294,7 @@ describe('PresentationCardComponent', () => {
   });
 
   it('shows a tooltip on focus for the desktop card and none for the compact card', () => {
-    const aside = render({ variant: 'aside' });
+    const aside = render({ variant: 'aside', profile: PROFILE });
     root(aside).querySelector('nav a')!.dispatchEvent(new FocusEvent('focus'));
     aside.detectChanges();
     expect(
@@ -210,7 +302,7 @@ describe('PresentationCardComponent', () => {
     ).toContain('Opens in a new tab');
 
     TestBed.resetTestingModule();
-    const compact = render({ variant: 'compact' });
+    const compact = render({ variant: 'compact', profile: PROFILE });
     root(compact)
       .querySelector('nav a')!
       .dispatchEvent(new FocusEvent('focus'));
@@ -222,17 +314,17 @@ describe('PresentationCardComponent', () => {
     const f = render({ variant: 'compact' });
     const toggle = root(f).querySelector<HTMLButtonElement>('button.expand')!;
     expect(toggle.getAttribute('aria-expanded')).toBe('false');
-    expect(text(f)).not.toContain('Recently');
+    expect(text(f)).not.toContain('Projects');
 
     toggle.click();
     f.detectChanges();
     expect(toggle.getAttribute('aria-expanded')).toBe('true');
-    expect(text(f)).toContain('Recently');
+    expect(text(f)).toContain('Projects');
     expect(text(f)).toContain('Location');
 
     toggle.click();
     f.detectChanges();
-    expect(text(f)).not.toContain('Recently');
+    expect(text(f)).not.toContain('Projects');
   });
 
   it('exposes one h1 and labels the region with the owner name', () => {

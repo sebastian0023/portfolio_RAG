@@ -48,7 +48,7 @@
     </div>
     <app-fact-list [facts]="profile().facts" [markers]="markers()" />
     <app-link-grid [links]="profile().links" [columns]="2" [tooltips]="true" />
-    <app-recent-timeline [items]="profile().recent" [markers]="markers()" />
+    <app-project-list [projects]="profile().projects" />
     <ng-container *ngTemplateOutlet="footer" />
   </aside>
 } @else {
@@ -100,7 +100,7 @@
     @if (expanded()) {
       <div id="more-details" class="more">
         <app-fact-list [facts]="profile().facts" [markers]="markers()" />
-        <app-recent-timeline [items]="profile().recent" [markers]="markers()" />
+        <app-project-list [projects]="profile().projects" />
         <ng-container *ngTemplateOutlet="footer" />
       </div>
     }

@@ -38,23 +38,37 @@ export const PROFILE: CardProfile = {
       ariaLabel: `${DISPLAY_NAME} on LinkedIn, opens in a new tab`,
       href: 'https://www.linkedin.com/in/daniel-sebastian-macias-macias-68217a354',
     },
+    {
+      id: 'em',
+      label: 'Email',
+      icon: 'mail',
+      ariaLabel: `Email ${DISPLAY_NAME}`,
+      href: 'mailto:sebastian.macias@iteso.mx',
+    },
+    {
+      id: 'cv',
+      label: 'CV',
+      icon: 'fileText',
+      ariaLabel: `Download ${DISPLAY_NAME}'s CV (PDF)`,
+      // Waiting for the PDF: set this to the hosted file (for example 'daniel-macias-cv.pdf') and the button works.
+      href: null,
+      download: true,
+    },
   ],
-  recent: [
+  // Names only. To link a project, set its `href` to an https URL; until then it is shown as plain text.
+  projects: [
     {
-      date: { value: 'Oct 2026' },
-      prefix: 'Built ',
-      slot: { value: 'this portfolio with a retrieval-augmented chat' },
+      id: 'image-classification',
+      name: 'Image Classification Platform',
+      href: null,
     },
+    { id: 'relationship-rag', name: 'Relationship RAG', href: null },
     {
-      date: { value: '2026' },
-      prefix: 'Earned the ',
-      slot: { value: 'AWS Academy Cloud Foundations certification' },
+      id: 'serverless-portfolio',
+      name: 'Serverless AI Portfolio with RAG Chat',
+      href: null,
     },
-    {
-      date: { value: 'Jan 2026' },
-      prefix: 'Started as a frontend intern at ',
-      slot: { value: 'CORAE' },
-    },
+    { id: 'lift', name: 'Lift, Workout Tracking PWA', href: null },
   ],
   lastUpdated: { value: 'Oct 2026' },
 };
