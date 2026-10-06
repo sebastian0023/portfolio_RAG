@@ -120,6 +120,38 @@ describe('the live profile', () => {
   });
 });
 
+describe('avatar and link brand colors', () => {
+  it('shows the photo inside both avatars, decorative and same-origin, with the initials behind it', () => {
+    for (const variant of ['aside', 'compact'] as const) {
+      TestBed.resetTestingModule();
+      const f = render({ variant, profile: PROFILE });
+      const img = root(f).querySelector<HTMLImageElement>('.avatar img');
+      expect(img, variant).not.toBeNull();
+      expect(img?.getAttribute('src')).toBe('avatar.jpg');
+      expect(img?.getAttribute('alt')).toBe('');
+      expect(root(f).querySelector('.avatar')?.textContent).toContain('DM');
+    }
+  });
+
+  it('shows no image when the profile has no photo', () => {
+    const f = render({ variant: 'aside', profile: TEMPLATE_PROFILE });
+    expect(root(f).querySelector('.avatar img')).toBeNull();
+  });
+
+  it('tags the GitHub and LinkedIn links so each icon gets its brand color', () => {
+    const f = render({ variant: 'aside', profile: PROFILE });
+    const brands = Array.from(
+      root(f).querySelectorAll<HTMLAnchorElement>('nav a'),
+    ).map((a) => a.getAttribute('data-brand'));
+    expect(brands).toEqual(['gh', 'li']);
+  });
+
+  it('has no Focus line in the live card', () => {
+    const f = render({ variant: 'aside', profile: PROFILE });
+    expect(text(f)).not.toContain('Focus');
+  });
+});
+
 describe('PresentationCardComponent', () => {
   it('shows the owner placeholders as plain text without markers in a clean build', () => {
     const f = render({ variant: 'aside' });

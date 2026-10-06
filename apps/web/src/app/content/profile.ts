@@ -7,6 +7,7 @@ export const DISPLAY_NAME = 'Daniel';
 export const PROFILE: CardProfile = {
   name: { value: 'Daniel Sebastian Macias Macias' },
   initials: 'DM',
+  avatarSrc: 'avatar.jpg',
   headline: { value: 'Software engineering intern, frontend' },
   availability: 'internships',
   facts: [
@@ -20,11 +21,6 @@ export const PROFILE: CardProfile = {
       label: 'Studies',
       prefix: 'Systems Engineering · ITESO · ',
       slot: { value: 'expected 2027' },
-    },
-    {
-      icon: 'target',
-      label: 'Focus',
-      slot: { value: 'Angular frontends and serverless AWS' },
     },
   ],
   links: [

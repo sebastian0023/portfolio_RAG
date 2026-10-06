@@ -26,6 +26,7 @@ import type { CardLink } from './card.models';
               target="_blank"
               rel="noopener noreferrer"
               [attr.aria-label]="link.ariaLabel"
+              [attr.data-brand]="link.id"
               [attr.title]="tooltips() ? null : 'Opens in a new tab'"
               (click)="onClick($event, link)"
               (mouseenter)="show(link.id)"
@@ -82,6 +83,13 @@ import type { CardLink } from './card.models';
       box-shadow: var(--elev-pressed);
       background: var(--accent-soft);
       color: var(--accent);
+    }
+    /* Brand colors stay on the icon even on hover; the dark theme lightens them so they remain visible. */
+    a[data-brand='gh'] app-icon:first-child {
+      color: var(--brand-github);
+    }
+    a[data-brand='li'] app-icon:first-child {
+      color: var(--brand-linkedin);
     }
     .label {
       flex: 1;

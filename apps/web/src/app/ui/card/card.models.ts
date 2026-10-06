@@ -35,6 +35,9 @@ export interface CardRecent {
 export interface CardProfile {
   readonly name: Slot;
   readonly initials: string;
+  // Optional photo shown in the avatar circle (a same-origin file, so the CSP img-src 'self' allows it). The
+  // initials stay as the fallback behind it.
+  readonly avatarSrc?: string;
   readonly headline: Slot;
   readonly availability: Availability;
   readonly facts: readonly CardFact[];

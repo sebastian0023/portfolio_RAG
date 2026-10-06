@@ -1,4 +1,4 @@
-/* Ask [Name] — design tokens. Components reference only these. Source: claude.ai/design project tokens.css */
+/* Ask Daniel — design tokens. Components reference only these. Source: claude.ai/design project tokens.css */
 :root,
 [data-theme='light'] {
   --surface: #f0f0f0;
@@ -16,6 +16,9 @@
   --hairline: rgba(31, 31, 31, 0.1);
   --scrim: rgba(31, 31, 31, 0.32);
   --kbd: #d8d8d8;
+  --page: #b9c8dc; /* the page behind the cards: a cool blue-grey that sets the light surfaces apart */
+  --brand-github: #111111;
+  --brand-linkedin: #0a66c2;
 }
 [data-theme='dark'] {
   --surface: #262626;
@@ -33,6 +36,9 @@
   --hairline: rgba(237, 237, 237, 0.1);
   --scrim: rgba(10, 10, 10, 0.6);
   --kbd: #1c1c1c;
+  --page: #0e1a2b;
+  --brand-github: #f2f2f2;
+  --brand-linkedin: #6fb6f5;
 }
 :root {
   --elev-raised:
