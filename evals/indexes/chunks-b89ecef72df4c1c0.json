@@ -1,0 +1,287 @@
+{
+  "indexName": "chunks-b89ecef72df4c1c0",
+  "manifestSha256": "b89ecef72df4c1c0b1f29f675ee25bc466ea2df3cf27a1d05a5fb793ab1fe07a",
+  "manifest": {
+    "manifestVersion": 1,
+    "configs": {
+      "chunker": {
+        "version": 1,
+        "maxChars": 600,
+        "minChars": 120
+      },
+      "embedding": {
+        "model": "amazon.titan-embed-text-v2:0",
+        "dimensions": 512,
+        "normalize": true,
+        "dataType": "float32"
+      },
+      "index": {
+        "dimension": 512,
+        "distanceMetric": "cosine",
+        "dataType": "float32",
+        "nonFilterableMetadataKeys": [
+          "text",
+          "title",
+          "section",
+          "path",
+          "url",
+          "contentHash"
+        ]
+      },
+      "metadataSchema": 1
+    },
+    "sources": [
+      {
+        "id": "education-overview",
+        "path": "knowledge/education.md",
+        "title": "Education and certifications",
+        "kind": "education",
+        "updated": "2026-10-05",
+        "fileSha256": "021b1f29c494b610e4cb3e73b9ee67810de3ea4593005731ff81a51394d3b5da",
+        "chunks": [
+          {
+            "id": "education-overview#university-1",
+            "contentHash": "2c1b268b0a91284ed492d4c3eed567a06f8a03dd04d96acbc92d75d7f08ac599"
+          },
+          {
+            "id": "education-overview#certifications-1",
+            "contentHash": "8dbf2a535e9c3f974ab0960351d3fb03918515e4aa8e6a919505d4510489c506"
+          }
+        ]
+      },
+      {
+        "id": "exp-corae",
+        "path": "knowledge/experience/corae.md",
+        "title": "Software Engineering Intern at CORAE",
+        "kind": "experience",
+        "updated": "2026-10-05",
+        "fileSha256": "faac8aff37530df636f2c17736348dc1d16156254ba785be184a12df82c7c371",
+        "chunks": [
+          {
+            "id": "exp-corae#overview-1",
+            "contentHash": "5a2ec3df48b34c432949a61171a75172166656f6b0438229e2f4b826c85cea8b"
+          },
+          {
+            "id": "exp-corae#admin-platform-1",
+            "contentHash": "f109551b0c1944aed5bfab65545900b59130cd7dc496e3039259dcb92108f8a5"
+          },
+          {
+            "id": "exp-corae#scheduling-calendar-1",
+            "contentHash": "836646cb99acea77bea1cc3d894bbc2968046d6f018c066651bc908f7e341194"
+          },
+          {
+            "id": "exp-corae#excel-import-and-export-1",
+            "contentHash": "49727a12f5e99964698c19afcffa281e0b54695af1ff8c38567f74103542e5ad"
+          },
+          {
+            "id": "exp-corae#forms-dialogs-and-roles-1",
+            "contentHash": "6ec4921bc65ec50820bcf898acda5d3f87b9142d6d4bf6e1282e0e47ed2651f4"
+          },
+          {
+            "id": "exp-corae#api-integration-and-authentication-1",
+            "contentHash": "2aa7c1ca504967449298537b41f52b7490a4a87caa5677bba1c76ee703371c22"
+          },
+          {
+            "id": "exp-corae#performance-tests-and-styling-1",
+            "contentHash": "18e952cc907e9206070034fee99004b43c1ab59d8ed61e2319a7fc333d359bb2"
+          }
+        ]
+      },
+      {
+        "id": "exp-freelance",
+        "path": "knowledge/experience/freelance-web-developer.md",
+        "title": "Freelance Web Developer",
+        "kind": "experience",
+        "updated": "2026-10-05",
+        "fileSha256": "150dd1acad3d370fcf054d8b9dcf464a94a00d820b811681785aa782c2dbfd39",
+        "chunks": [
+          {
+            "id": "exp-freelance#overview-1",
+            "contentHash": "9dcb9502a1cea4e2ffa9a2607a33e2dcb9c22aebb79d6182ad1f4c1d932a7071"
+          },
+          {
+            "id": "exp-freelance#business-website-1",
+            "contentHash": "c6329a50763c3ccc60d4ecd7195d48e896e4f46b0f3478f05de3fad2c84c8840"
+          },
+          {
+            "id": "exp-freelance#contact-system-1",
+            "contentHash": "7b1c044e47fa2811e62c0e8754e24080f5e65eca2bcf9c88d8185593211de641"
+          }
+        ]
+      },
+      {
+        "id": "faq-general",
+        "path": "knowledge/faq.md",
+        "title": "About Daniel and frequently asked questions",
+        "kind": "faq",
+        "updated": "2026-10-05",
+        "fileSha256": "f207e2f2723ea0e592c7f7a325cd1b92470909b57f4bc382d8a6452d25a3057f",
+        "chunks": [
+          {
+            "id": "faq-general#who-is-daniel-1",
+            "contentHash": "ec5b2115a42187fb2b13017fb42ef8fa220eb7f466aac71b2d521c7341fdf77a"
+          },
+          {
+            "id": "faq-general#what-is-daniel-doing-now-1",
+            "contentHash": "203bbdfd6d4f7fe1ec319f5f96b3871350b7fd478b655b7357d2e8b1a19e09fd"
+          },
+          {
+            "id": "faq-general#which-languages-does-daniel-speak-1",
+            "contentHash": "a021c8d6d1e213f9b081ceeaa0005d3830846fd58e9dabb662c9c5392e3a63af"
+          },
+          {
+            "id": "faq-general#what-kinds-of-projects-has-daniel-built-1",
+            "contentHash": "301515da52a3f12e562043f9fb48fdc6e6fc92d2d9de25cdef76615538a93e6a"
+          },
+          {
+            "id": "faq-general#is-daniel-open-to-internships-1",
+            "contentHash": "c823c8496bf2d7a9207845ec9d108675a18a1e291459b663601233cd782196be"
+          },
+          {
+            "id": "faq-general#how-can-i-contact-daniel-1",
+            "contentHash": "68a2bc2fc3568747483c66482609d6aba2b364340b5ae9aa0fb1f1bafdf8b11e"
+          }
+        ]
+      },
+      {
+        "id": "proj-image-classification",
+        "path": "knowledge/projects/image-classification-platform.md",
+        "title": "Image Classification Platform",
+        "kind": "project",
+        "updated": "2026-10-05",
+        "fileSha256": "5139e1349e270498a5745e5e57c71d12cdfde40390abfd6c392feed13f87b514",
+        "chunks": [
+          {
+            "id": "proj-image-classification#overview-1",
+            "contentHash": "9761c2f8c6cb49742c82543bc50c405205c8fbd4e58a962195e36ce3401988bd"
+          },
+          {
+            "id": "proj-image-classification#pipeline-and-results-1",
+            "contentHash": "e62b938983e647c457c843e3eb6cfb18a1f86b7f1fbf8b52ebfdce2a0a67358e"
+          },
+          {
+            "id": "proj-image-classification#web-portal-1",
+            "contentHash": "eeb268139dc4092e02de14c68a33ac57c6ecc7abe4377304a83005ce11277a5e"
+          }
+        ]
+      },
+      {
+        "id": "proj-lift",
+        "path": "knowledge/projects/lift-workout-tracker.md",
+        "title": "Lift, Workout Tracking PWA",
+        "kind": "project",
+        "updated": "2026-10-05",
+        "fileSha256": "6da23cbdd9d53d416c147876ce0c6ff94209b4c91d1fdf633369a4cbb88cc28b",
+        "chunks": [
+          {
+            "id": "proj-lift#overview-1",
+            "contentHash": "f0009ff217eb88387d12e0618a905922717d3f25af8ac319ac581932ac0d2461"
+          },
+          {
+            "id": "proj-lift#features-1",
+            "contentHash": "0a61a40931dd22643b93ed6c6afa51d4a5c1ebb55328e30d94dfd9c18d3c00bf"
+          },
+          {
+            "id": "proj-lift#creating-a-routine-1",
+            "contentHash": "a5f4cdc8295d41e35a4cf18e9c64e120b1575f60a624378a53a26f293d1b7c94"
+          },
+          {
+            "id": "proj-lift#backend-1",
+            "contentHash": "70c08b80869cff531924f90330231f2d59ab05e28aad9cfd90506cb06b201b70"
+          },
+          {
+            "id": "proj-lift#testing-1",
+            "contentHash": "e08b71c22bec081a4c302e3a70c08b370bd56a651d0d81ea3b4fbc2709381811"
+          }
+        ]
+      },
+      {
+        "id": "proj-relationship-rag",
+        "path": "knowledge/projects/relationship-rag.md",
+        "title": "Relationship RAG",
+        "kind": "project",
+        "updated": "2026-10-05",
+        "url": "https://github.com/sebastian0023/relationship-rag",
+        "fileSha256": "5aae4e5a7217d88b7e10508bd2693564c7bab19fe07f6c5a6fd13f7b550cff00",
+        "chunks": [
+          {
+            "id": "proj-relationship-rag#overview-1",
+            "contentHash": "d9f0b4bd493907cc4398e78ddce70837f67c8e89f3706a2982813a29d607ca78"
+          },
+          {
+            "id": "proj-relationship-rag#what-it-does-1",
+            "contentHash": "fe41e570061fefcf83a73cb9783a9522e3c26f4d8358e537808d02bd2d91b146"
+          },
+          {
+            "id": "proj-relationship-rag#retrieval-augmented-chat-1",
+            "contentHash": "35218a5d09e6264a783a1804fbcfec45e380bda2c5685c6718d74c0c1a9ed89a"
+          },
+          {
+            "id": "proj-relationship-rag#architecture-and-testing-1",
+            "contentHash": "86e107f9a8166ee9d8f357e06dc7e3ccb0a7b50fcfcbcb2bef9f0d7735c5da2d"
+          }
+        ]
+      },
+      {
+        "id": "proj-serverless-portfolio",
+        "path": "knowledge/projects/serverless-ai-portfolio.md",
+        "title": "Serverless AI Portfolio with RAG Chat",
+        "kind": "project",
+        "updated": "2026-10-05",
+        "fileSha256": "f49690f4d8e8e8d409981576a361cb11c8fb61889827101a317df8df51d9147c",
+        "chunks": [
+          {
+            "id": "proj-serverless-portfolio#overview-1",
+            "contentHash": "9c8bd70b4b0e8be4a76eb980f746921fec8b3ab702602da31fdcaf3b8bf1326e"
+          },
+          {
+            "id": "proj-serverless-portfolio#site-and-chat-api-1",
+            "contentHash": "b9fdbb7ac39074d164de2ce49b64068a25bb4419ce1f959480caf3ab0ebb1f0a"
+          },
+          {
+            "id": "proj-serverless-portfolio#retrieval-pipeline-1",
+            "contentHash": "ba04f98f822da0a5d271a8ab751c86dcaf141603009928fd45cf630691013e80"
+          },
+          {
+            "id": "proj-serverless-portfolio#security-1",
+            "contentHash": "ad4f28469bcfcb9820ee04fcda5e7b2b8de70e6041aaf9005c93d189c20789ca"
+          }
+        ]
+      },
+      {
+        "id": "skills-overview",
+        "path": "knowledge/skills.md",
+        "title": "Technical skills",
+        "kind": "skill",
+        "updated": "2026-10-05",
+        "fileSha256": "6e58f163c255cc3eb191c59bff42b45eb9fc5f1f734c8fe77e9ddc7361b56075",
+        "chunks": [
+          {
+            "id": "skills-overview#languages-1",
+            "contentHash": "f0f823084cac9a5f8dc23e52d880a2c4a740129b05be96c9af763d41be636a7e"
+          },
+          {
+            "id": "skills-overview#web-and-frontend-1",
+            "contentHash": "1c0e19f967a38712d131341e8a7d9a7ebbd0f75d1dfe1bba3d9f636caea8e273"
+          },
+          {
+            "id": "skills-overview#ai-and-machine-learning-1",
+            "contentHash": "d6aa88c19f028d635bb183b6b77c14de83b7358126e5cc5ab578f4094f6c0325"
+          },
+          {
+            "id": "skills-overview#cloud-1",
+            "contentHash": "7f820770d553d3488e3f02c97991d4f0d83cd1def40ffe21a2d379f4abfd89ed"
+          },
+          {
+            "id": "skills-overview#databases-and-big-data-1",
+            "contentHash": "70564f3ccb3d6d2491e4724f21d9665f833f26c31656f32d14256d8562403297"
+          },
+          {
+            "id": "skills-overview#devops-and-tools-1",
+            "contentHash": "8d4f0df6e56eac8c44eb9acadd7e5208d32ba4ae3157d67b2e95afe66b487f5c"
+          }
+        ]
+      }
+    ]
+  }
+}
